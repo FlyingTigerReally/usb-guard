@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>USB Guard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div>
+        <h1 data-i18n="app.title">USB Guard</h1>
+        <p data-i18n="app.subtitle">Auto-close programs launched from a USB drive once it is unplugged</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="lang-box">
+        <span class="lang-label" data-i18n="language.label">Language</span>
+        <select id="langSelect" class="lang-select"></select>
+      </div>
+      <button id="btnRefresh" class="btn" data-i18n="btn.refresh">Refresh Snapshot</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-i18n="panel.drives">Drives</h2>
+        <span class="hint" data-i18n="panel.drivesHint">Toggle to decide whether programs are closed when this drive is removed</span>
+      </div>
+      <div id="driveList" class="drive-list"></div>
+
+      <div class="panel-head sub">
+        <h2 data-i18n="panel.settings">Settings</h2>
+      </div>
+      <div class="settings">
+        <label class="setting-row">
+          <input type="checkbox" id="setKillChildren" />
+          <span data-i18n="settings.killChildren">Also force-close child processes (recommended)</span>
+        </label>
+        <label class="setting-row">
+          <input type="checkbox" id="setAutoGuard" />
+          <span data-i18n="settings.autoGuard">Auto-guard removable disks (USB drives) when detected</span>
+        </label>
+        <label class="setting-row">
+          <input type="checkbox" id="setMinimizeToTray" />
+          <span data-i18n="settings.minimizeToTray">Minimize to tray when the window is closed (stay resident)</span>
+        </label>
+        <label class="setting-row">
+          <input type="checkbox" id="setAutoLaunch" />
+          <span data-i18n="settings.autoLaunch">Launch this guard automatically at login</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-i18n="panel.events">Event Log</h2>
+        <span class="hint" id="eventCount">0</span>
+      </div>
+      <div id="eventList" class="event-list"></div>
+    </section>
+  </main>
+
+  <div id="detailDrawer" class="drawer hidden">
+    <div class="drawer-head">
+      <h3 id="drawerTitle" data-i18n="panel.processDetail">Process Detail</h3>
+      <button id="drawerClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+    <div class="drawer-foot">
+      <button id="btnKillAll" class="btn btn-danger" data-i18n="btn.killAll">Force-close all programs on this drive</button>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

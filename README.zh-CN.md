@@ -1,0 +1,158 @@
+<div align="center">
+
+<img src="assets/icons/logo-256.png" alt="USB Guard logo" width="128" />
+
+# USB Guard
+
+**U 盘拔出的瞬间，自动关闭从它启动的全部程序。**
+
+基于 Electron 的轻量 Windows 托盘工具。
+
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+</div>
+
+---
+
+## 为什么需要它
+
+从 U 盘启动的便携软件，在 U 盘被拔掉后仍会在后台悄悄运行——它们持有文件句柄、遗留临时文件，甚至可能损坏数据。USB Guard 持续监听你的驱动器，一旦检测到驱动器消失，立即强制关闭从该盘启动的所有进程。
+
+## 功能特性
+
+- **驱动器监听** — 轮询 `Win32_LogicalDisk`，约 0.5 秒内发现拔出
+- **进程追踪** — 按可执行文件路径前缀（如 `E:\...`）匹配进程，并递归纳入子进程
+- **即时清理** — 通过 `taskkill /PID <pid> /F /T` 强制关闭整棵进程树
+- **按盘开关** — 每个驱动器可独立开启/关闭守护
+- **自动守护** — 检测到可移动磁盘（U 盘）时自动开启守护
+- **开机自启** — 可选随 Windows 登录启动
+- **系统托盘** — 常驻后台，支持关窗最小化到托盘
+- **中英双语** — English / 简体中文，运行时随时切换
+- **无后端、无遥测** — 全部数据来自 Windows 本地系统 API，完全离线可用
+
+## 运行环境
+
+- Windows 10 / 11
+- Node.js 18+（仅开发阶段需要）
+
+## 快速开始
+
+```bash
+git clone https://github.com/FlyingTigerReally/usb-guard.git
+cd usb-guard
+npm install
+npm start
+```
+
+## 使用方法
+
+1. 启动应用，所有检测到的驱动器会显示在 **驱动器列表** 面板。
+2. 打开某个驱动器的开关即可开启拔出守护（可移动磁盘默认自动守护）。
+3. 守护期间，应用会周期性记录从该盘启动的进程快照。
+4. **拔掉 U 盘** — 所有已登记进程立即被强制关闭。
+5. 在 **事件日志** 面板查看处理结果（拔出、关闭进程、失败原因）。
+
+托盘图标让守护在后台持续运行。右键可选 **显示主界面** / **退出**。
+
+## 设置项
+
+| 设置项                         | 默认值   | 说明                            |
+| ------------------------------ | -------- | ------------------------------- |
+| 连同子进程一起关闭             | 开       | 关闭整棵进程树（`taskkill /T`） |
+| 检测到可移动磁盘时自动开启守护 | 开       | U 盘（driveType = 2）自动守护   |
+| 关闭窗口时最小化到托盘         | 开       | 后台持续守护                    |
+| 开机自动启动                   | 开       | 注册/注销 Windows 自启动        |
+| 语言                           | 简体中文 | 界面语言：English / 简体中文    |
+
+## 工作原理
+
+驱动器检测采用**双层探测**，兼顾响应速度与 CPU 开销：
+
+```
+  快速层（每 500ms，不创建子进程）                完整扫描（PowerShell）
+┌────────────────────┐   盘符出现/消失时触发    ┌───────────────────┐
+│ fs.existsSync(root)│ ───────────────────────▶ │ Win32_LogicalDisk │  确认 + 取详情
+└─────────┬──────────┘                          └───────────────────┘
+          │ drive_removed（拔出事件）
+          ▼
+┌────────────────────┐   每 5s 刷新一次快照     ┌───────────────────┐
+│   守护编排服务      │ ───────────────────────▶ │  Win32_Process    │
+└─────────┬──────────┘                          └───────────────────┘
+          │ 检测到拔出 → 强制关闭已登记 PID
+          ▼
+┌────────────────────┐
+│  taskkill /T /F    │  （整棵进程树）
+└────────────────────┘
+```
+
+- **快速层** — 每 500ms 用一次轻量 `fs.existsSync` 探测各盘根目录（无子进程开销）；只有盘符真正出现/消失时才触发一次 PowerShell 完整扫描确认。
+- **快照** — 进程快照每 5 秒刷新一次（拔出时另有按需扫描兜底，可捕获拔出前最后一刻启动的进程）。
+- 根目录探测不可靠的设备（网络盘 / 光驱）自动转为仅靠周期性完整扫描处理。
+
+进程判定规则：可执行文件路径以盘符根目录开头（如 `E:\`），或命令行引用了该盘根目录，即视为「从该盘启动」。同根目录下的子进程会被递归纳入。
+
+## 打包安装程序
+
+```bash
+npm run build
+```
+
+产物输出到 `dist/`，生成 NSIS 安装包。
+
+## 项目结构
+
+```
+usb-guard/
+├── assets/icons/            # SVG 原稿 + 生成的 PNG / .ico
+├── scripts/
+│   └── generate-icons.js    # SVG → PNG / .ico 生成器（npm run icons）
+├── src/
+│   ├── main.js              # Electron 主进程（窗口 / 托盘 / 菜单 / IPC）
+│   ├── preload.js           # contextBridge API 暴露层
+│   ├── i18n/
+│   │   ├── index.js         # t() 翻译解析器
+│   │   └── locales/         # en.js, zh-CN.js
+│   ├── services/
+│   │   ├── driveWatcher.js  # 驱动器枚举 + 拔出检测
+│   │   ├── processGuard.js  # 进程扫描 + taskkill
+│   │   ├── guardService.js  # 编排 + 事件日志
+│   │   ├── settings.js      # 设置持久化
+│   │   └── ps.js            # PowerShell 调用封装
+│   └── renderer/            # 界面（HTML / CSS / JS）
+└── package.json
+```
+
+## 注意事项与限制
+
+- 部分 NTFS 格式化的 U 盘会被 Windows 识别为「固定磁盘」（driveType = 3），此类需手动开启守护，或扩展 `guardService.js` 里的自动守护规则。
+- 以管理员权限运行的进程无法被普通权限的实例关闭。如需完整覆盖，请以管理员身份运行 USB Guard。
+- 在守护开启**之前**启动的进程，要等下一次快照（默认 5 秒）或拔出时的按需扫描才会被登记。
+
+## 配置文件
+
+设置存储在 `%APPDATA%/usb-guard/settings.json`。所有状态字段使用 `0/1` 或英文枚举。主要配置项：
+
+```json
+{
+  "killChildren": 1,
+  "autoGuardRemovable": 1,
+  "snapshotIntervalMs": 5000,
+  "removePollMs": 500,
+  "autoLaunch": 1,
+  "language": "zh-CN"
+}
+```
+
+## 参与贡献
+
+欢迎贡献代码！请先开 Issue 讨论你想做的改动。
+
+1. Fork 本仓库
+2. 创建功能分支（`git checkout -b feature/amazing-feature`）
+3. 提交改动（`git commit -m 'Add amazing feature'`）
+4. 推送分支（`git push origin feature/amazing-feature`）
+5. 发起 Pull Request
+
+## 开源协议
+
+本项目基于 MIT 协议开源，详见 [LICENSE](LICENSE) 文件。

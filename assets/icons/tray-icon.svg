@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 托盘图标：扁平实心盾牌 + 白色 U 盘，小尺寸下辨识度优先 -->
+  <path d="M32 4 C25 4 14 6 8.2 8.2 C7 8.7 6 9.8 6 11.5 L6 32 C6 44 16 52.4 32 58 C48 52.4 58 44 58 32 L58 11.5 C58 9.8 57 8.7 55.8 8.2 C50 6 39 4 32 4 Z" fill="#2563eb"/>
+  <!-- U 盘（白色） -->
+  <rect x="29.4" y="16" width="5.2" height="10" rx="1.4" fill="#ffffff"/>
+  <rect x="27.4" y="25" width="9.2" height="3.4" rx="1.2" fill="#ffffff"/>
+  <rect x="26.2" y="28.2" width="11.6" height="18.4" rx="3" fill="#ffffff"/>
+  <!-- U 盘指示条 -->
+  <rect x="29.4" y="32" width="5.2" height="1.8" rx="0.9" fill="#2563eb"/>
+  <rect x="29.4" y="35.4" width="5.2" height="1.8" rx="0.9" fill="#2563eb"/>
+</svg>

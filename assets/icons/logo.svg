@@ -1,0 +1,44 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 项目 Logo：与应用图标同一设计语言，带外发光与透明留白，适合 README/GitHub 展示 -->
+  <defs>
+    <linearGradient id="bg" x1="140" y1="130" x2="884" y2="894" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="shieldFill" x1="316" y1="226" x2="708" y2="752" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="483" y1="330" x2="541" y2="424" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#94a3b8"/>
+    </linearGradient>
+    <linearGradient id="body" x1="442" y1="446" x2="582" y2="680" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1e40af"/>
+      <stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+    <!-- 外发光 + 投影，让 logo 在浅色/深色 README 背景上都能浮起 -->
+    <filter id="halo" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="22" stdDeviation="30" flood-color="#1e3a8a" flood-opacity="0.32"/>
+    </filter>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#0b2a6b" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+
+  <!-- 带留白的圆角方块（整体含 halo） -->
+  <g filter="url(#halo)">
+    <rect x="72" y="72" width="880" height="880" rx="204" fill="url(#bg)"/>
+    <ellipse cx="376" cy="316" rx="392" ry="338" fill="#ffffff" opacity="0.11"/>
+
+    <!-- 盾牌 -->
+    <path filter="url(#soft)" d="M512 222 C452 222 382 234 334 245 C325 247 320 252 320 261 L320 500 C320 622 407 704 512 752 C617 704 704 622 704 500 L704 261 C704 252 699 247 690 245 C642 234 572 222 512 222 Z" fill="url(#shieldFill)"/>
+
+    <!-- U 盘 -->
+    <rect x="483" y="330" width="58" height="94" rx="12" fill="url(#metal)"/>
+    <rect x="464" y="412" width="96" height="38" rx="14" fill="#cbd5e1"/>
+    <rect x="446" y="440" width="132" height="240" rx="28" fill="url(#body)"/>
+    <rect x="486" y="492" width="52" height="15" rx="7.5" fill="#60a5fa"/>
+    <rect x="486" y="522" width="52" height="15" rx="7.5" fill="#3b82f6" opacity="0.72"/>
+  </g>
+</svg>

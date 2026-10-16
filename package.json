@@ -1,0 +1,38 @@
+{
+  "name": "usb-guard",
+  "version": "1.0.0",
+  "description": "U盘拔出后自动关闭从该U盘启动的程序（Windows）",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "icons": "electron scripts/generate-icons.js",
+    "build": "electron-builder --win"
+  },
+  "author": "FlyingTigerReally",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.local.usbguard",
+    "productName": "USB Guard",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "USB Guard"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*"
+    ]
+  }
+}

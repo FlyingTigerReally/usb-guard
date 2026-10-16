@@ -1,0 +1,46 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 背景渐变：品牌蓝，左上到右下 -->
+    <linearGradient id="bg" x1="140" y1="90" x2="884" y2="934" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <!-- 盾牌渐变 -->
+    <linearGradient id="shieldFill" x1="296" y1="194" x2="728" y2="784" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+    <!-- 金属接口 -->
+    <linearGradient id="metal" x1="483" y1="300" x2="541" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#94a3b8"/>
+    </linearGradient>
+    <!-- U盘本体 -->
+    <linearGradient id="body" x1="442" y1="418" x2="582" y2="666" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1e40af"/>
+      <stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+    <!-- 盾牌投影 -->
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="20" stdDeviation="26" flood-color="#0b2a6b" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <!-- 圆角方底 -->
+  <rect width="1024" height="1024" rx="228" fill="url(#bg)"/>
+  <!-- 左上高光，增加体积感 -->
+  <ellipse cx="330" cy="262" rx="430" ry="372" fill="#ffffff" opacity="0.11"/>
+
+  <!-- 盾牌 -->
+  <path filter="url(#soft)" d="M512 194 C444 194 366 208 312 220 C302 222 296 228 296 238 L296 500 C296 638 394 730 512 784 C630 730 728 638 728 500 L728 238 C728 228 722 222 712 220 C658 208 580 194 512 194 Z" fill="url(#shieldFill)"/>
+
+  <!-- U 盘：金属接口 -->
+  <rect x="483" y="300" width="58" height="100" rx="12" fill="url(#metal)"/>
+  <!-- U 盘：接口卡环 -->
+  <rect x="462" y="388" width="100" height="40" rx="14" fill="#cbd5e1"/>
+  <!-- U 盘：本体 -->
+  <rect x="442" y="418" width="140" height="248" rx="30" fill="url(#body)"/>
+  <!-- U 盘：指示条 -->
+  <rect x="486" y="476" width="52" height="16" rx="8" fill="#60a5fa"/>
+  <rect x="486" y="508" width="52" height="16" rx="8" fill="#3b82f6" opacity="0.72"/>
+</svg>
