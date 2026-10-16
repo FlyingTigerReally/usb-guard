@@ -153,6 +153,14 @@ Contributions are welcome! Please open an issue first to discuss what you would 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## Support
+
+If this project helps you, you can buy me a coffee via **Alipay** (支付宝):
+
+<img src="assets/sponsorship.jpg" alt="Alipay sponsorship QR code" width="240" />
+
+Scan the QR code with the Alipay app. Any amount is appreciated — thank you for supporting open source!
+
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

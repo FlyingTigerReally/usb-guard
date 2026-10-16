@@ -153,6 +153,14 @@ usb-guard/
 4. 推送分支（`git push origin feature/amazing-feature`）
 5. 发起 Pull Request
 
+## 支持一下
+
+如果这个项目对你有帮助，欢迎请作者喝杯咖啡 ☕（**支付宝**扫码即可）：
+
+<img src="assets/sponsorship.jpg" alt="支付宝收款码" width="240" />
+
+打开支付宝「扫一扫」扫码赞助，金额随意，感谢你对开源的支持！
+
 ## 开源协议
 
 本项目基于 MIT 协议开源，详见 [LICENSE](LICENSE) 文件。
