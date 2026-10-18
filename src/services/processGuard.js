@@ -9,8 +9,6 @@
 const { execFile } = require('child_process');
 const { runPs } = require('./ps');
 
-const TASKKILL = 'taskkill.exe';
-
 /**
  * 获取全系统进程表（单一 JSON 输出，避免跨 PowerShell 调用编码/转义问题）
  * source 字段：'exePath' = 从路径判定；'commandLine' = 从命令行判定（exePath 为空的宿主进程）
@@ -46,10 +44,9 @@ ConvertTo-Json -InputObject $list -Compress
 /**
  * 扫描"从指定驱动器启动的进程"
  * @param {string} driveId  盘符，如 'E:'
- * @param {string} volumeSerialNumber 卷序列号（U盘唯一标识，换盘识别）
  * @param {Array} [allProcesses] 可选，直接传入进程表（用于共享一次扫描）
  */
-async function scanDriveProcesses(driveId, volumeSerialNumber, allProcesses) {
+async function scanDriveProcesses(driveId, allProcesses) {
   const prefix = (driveId.endsWith('\\') ? driveId : driveId + '\\').toLowerCase();
   let all = allProcesses;
   if (!all) {
@@ -124,14 +121,23 @@ function buildSnapshot(baseline, allProcesses) {
  * @returns {Promise<Array<{pid:number, ok:1|0, error:string}>>}
  */
 function killProcesses(pids, killChildren) {
+  // taskkill 的报错是本地化 OEM 码（中文系统为 GBK），Node 按 UTF-8 解码成乱码，
+  // 无法识别"进程已退出"（= 目的达成，不算失败）。经 cmd 切 UTF-8 代码页执行，
+  // 报错变为干净的英文 "not found"，可靠匹配。
+  const NOT_FOUND = /not found|没有找到/i;
   return Promise.all(
     pids.map(
       (pid) =>
         new Promise((resolve) => {
           const args = ['/PID', String(pid), '/F'];
           if (killChildren) args.push('/T');
-          execFile(TASKKILL, args, { windowsHide: true }, (err) => {
-            resolve(err ? { pid, ok: 0, error: err.message } : { pid, ok: 1, error: '' });
+          const cmdline = `chcp 65001>nul & taskkill ${args.join(' ')}`;
+          execFile('cmd.exe', ['/d', '/s', '/c', cmdline], { windowsHide: true }, (err) => {
+            if (!err || NOT_FOUND.test(err.message)) {
+              resolve({ pid, ok: 1, error: '' });
+            } else {
+              resolve({ pid, ok: 0, error: err.message });
+            }
           });
         })
     )

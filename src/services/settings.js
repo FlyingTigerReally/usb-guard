@@ -21,8 +21,9 @@ const DEFAULTS = {
   snapshotIntervalMs: 5000,
 
   // 拔出检测轮询间隔（毫秒）。拔盘后多久发现，直接决定"关闭"的及时性
+  // 探测本身是微秒级系统调用，300ms 的常驻开销可忽略
   // 建议范围 300 ~ 1000
-  removePollMs: 500,
+  removePollMs: 300,
 
   // 事件日志最大保留条数（内存中）
   maxEvents: 500,
@@ -37,6 +38,12 @@ const DEFAULTS = {
   // 界面语言：'en' = English，'zh-CN' = 简体中文
   // 说明：取值为英文语言码，不做中文判断
   language: 'en',
+
+  // 界面主题：'system' = 跟随操作系统，'light' = 浅色，'dark' = 深色
+  theme: 'system',
+
+  // 3D 背景样式：'core' = 守护核心，'nebula' = 粒子星云，'off' = 关闭
+  scene3d: 'core',
 };
 
 let data = { ...DEFAULTS };

@@ -48,7 +48,8 @@ $list = @(Get-CimInstance Win32_LogicalDisk | ForEach-Object {
 })
 ConvertTo-Json -InputObject $list -Compress
 `;
-  return runPs(ps).then((stdout) => {
+  // 确认扫描在拔出关键路径上：超时收紧到 5s（默认 30s 会让拔出处理卡死很久）
+  return runPs(ps, { timeoutMs: 5000 }).then((stdout) => {
     let arr = JSON.parse(stdout.trim() || '[]');
     if (!Array.isArray(arr)) arr = [arr];
     arr = arr.filter((d) => DRIVE_TYPES.has(Number(d.driveType)));
@@ -96,6 +97,7 @@ function createDriveWatcher({
   let timer = null;
   let running = false;
   let lastReconcile = 0;
+  let confirmFailures = 0; // 疑似拔出的确认扫描连续失败次数（PowerShell 卡死兜底）
 
   function safeRemoved(drive) {
     Promise.resolve(onRemoved(drive)).catch((e) => {
@@ -111,8 +113,23 @@ function createDriveWatcher({
     let list;
     try {
       list = await enumDrives();
+      confirmFailures = 0;
     } catch (err) {
       if (onError) onError(err);
+      // 确认扫描失败（PowerShell 卡死/超时）：疑似拔出连续 2 次确认失败后
+      // 保守按拔出处理——探测已报盘符消失，误杀风险极低，好过失去保护
+      if (suspectId) {
+        confirmFailures++;
+        if (confirmFailures >= 2) {
+          const drive = map.get(suspectId);
+          if (drive) {
+            map.delete(suspectId);
+            slowList.delete(suspectId);
+            safeRemoved({ ...drive, status: 'removed' });
+          }
+          confirmFailures = 0;
+        }
+      }
       return;
     }
     const next = new Map(list.map((d) => [d.id, d]));
@@ -131,6 +148,12 @@ function createDriveWatcher({
       if (!FAST_PROBE_TYPES.has(Number(drive.driveType))) slowList.add(id);
       const prev = map.get(id);
       if (!prev || prev.volumeSerialNumber !== drive.volumeSerialNumber) {
+        // 换盘竞态：盘符未消失但卷已更换——先把旧盘按拔出走完击杀流程，再接入新盘
+        if (prev) {
+          map.delete(id);
+          slowList.delete(id);
+          safeRemoved({ ...prev, status: 'removed' });
+        }
         map.set(id, drive);
         onConnected(drive);
       }

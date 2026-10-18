@@ -1,6 +1,6 @@
 {
   "name": "usb-guard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "U盘拔出后自动关闭从该U盘启动的程序（Windows）",
   "main": "src/main.js",
   "scripts": {
@@ -12,7 +12,9 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "gsap": "^3.15.0",
+    "three": "^0.186.1"
   },
   "build": {
     "appId": "com.local.usbguard",

@@ -15,6 +15,10 @@ module.exports = {
   'tray.show': 'Show main window',
   'tray.exit': 'Exit',
   'language.label': 'Language',
+  'theme.label': 'Theme',
+  'theme.system': 'Follow system',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
 
   // ---------- Application menu ----------
   'menu.file': 'File',
@@ -43,8 +47,17 @@ module.exports = {
   'about.title': 'About USB Guard',
   'about.message': 'USB Guard - Auto-close USB programs on unplug',
   'about.detail':
-    'Version 1.0.0\n\nDetects when a USB drive is unplugged and force-closes every program launched from that drive.\nData source: local Windows system APIs.',
+    'Version 1.1.0\n\nDetects when a USB drive is unplugged and force-closes every program launched from that drive.\nData source: local Windows system APIs.',
   'about.ok': 'OK',
+
+  // ---------- Readout ----------
+  'stat.guarded': 'Guarded',
+  'stat.drives': 'drives',
+  'stat.processes': 'Tracked processes',
+  'stat.procsUnit': 'procs',
+  'stat.events': 'Event log',
+  'stat.eventsUnit': 'entries',
+  'stat.watching': 'Drive watch active',
 
   // ---------- Panels ----------
   'panel.drives': 'Drives',
@@ -56,6 +69,7 @@ module.exports = {
 
   // ---------- Buttons ----------
   'btn.refresh': 'Refresh Snapshot',
+  'btn.settings': 'Settings',
   'btn.refreshing': 'Refreshing…',
   'btn.close': 'Close',
   'btn.killAll': 'Force-close all programs on this drive',
@@ -81,6 +95,10 @@ module.exports = {
   'settings.autoGuard': 'Auto-guard removable disks (USB drives) when detected',
   'settings.minimizeToTray': 'Minimize to tray when the window is closed (stay resident)',
   'settings.autoLaunch': 'Launch this guard automatically at login',
+  'settings.scene3d': '3D background',
+  'scene.core': 'Guard Core',
+  'scene.nebula': 'Nebula',
+  'scene.off': 'Off',
 
   // ---------- Empty states ----------
   'empty.noDrives': 'No non-system drives detected',

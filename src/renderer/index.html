@@ -7,22 +7,59 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- 3D 主视觉：Guard Core 沉浸式背景（WebGL 不可用时自动隐藏，CSS 渐变兜底） -->
+  <canvas id="hero3d"></canvas>
+
   <header class="topbar">
     <div class="brand">
       <img class="brand-logo" src="../../assets/icons/app-128.png" alt="" />
-      <div>
+      <div class="brand-text">
         <h1 data-i18n="app.title">USB Guard</h1>
         <p data-i18n="app.subtitle">Auto-close programs launched from a USB drive once it is unplugged</p>
       </div>
     </div>
     <div class="top-actions">
       <div class="lang-box">
+        <span class="lang-label" data-i18n="theme.label">Theme</span>
+        <select id="themeSelect" class="lang-select"></select>
+      </div>
+      <div class="lang-box">
         <span class="lang-label" data-i18n="language.label">Language</span>
         <select id="langSelect" class="lang-select"></select>
       </div>
+      <button id="btnSettings" class="btn btn-ghost" data-i18n="btn.settings">Settings</button>
       <button id="btnRefresh" class="btn" data-i18n="btn.refresh">Refresh Snapshot</button>
     </div>
   </header>
+
+  <!-- 仪表读数带：守护中的盘 / 已追踪进程 / 事件数 + 监听状态 -->
+  <div class="readout">
+    <div class="readout-item">
+      <div class="readout-label" data-i18n="stat.guarded">Guarded</div>
+      <div class="readout-value">
+        <span class="stat-value" id="statGuarded">0</span>
+        <span class="readout-unit" data-i18n="stat.drives">drives</span>
+      </div>
+    </div>
+    <div class="readout-item">
+      <div class="readout-label" data-i18n="stat.processes">Tracked processes</div>
+      <div class="readout-value">
+        <span class="stat-value" id="statProcesses">0</span>
+        <span class="readout-unit" data-i18n="stat.procsUnit">procs</span>
+      </div>
+    </div>
+    <div class="readout-item">
+      <div class="readout-label" data-i18n="stat.events">Event log</div>
+      <div class="readout-value">
+        <span class="stat-value" id="statEvents">0</span>
+        <span class="readout-unit" data-i18n="stat.eventsUnit">entries</span>
+      </div>
+    </div>
+    <div class="readout-live">
+      <span class="live-dot"></span>
+      <span data-i18n="stat.watching">Drive watch active</span>
+    </div>
+  </div>
 
   <main class="layout">
     <section class="panel">
@@ -31,10 +68,26 @@
         <span class="hint" data-i18n="panel.drivesHint">Toggle to decide whether programs are closed when this drive is removed</span>
       </div>
       <div id="driveList" class="drive-list"></div>
+    </section>
 
-      <div class="panel-head sub">
-        <h2 data-i18n="panel.settings">Settings</h2>
+    <section class="panel">
+      <div class="panel-head">
+        <h2 data-i18n="panel.events">Event Log</h2>
+        <span class="hint" id="eventCount">0</span>
       </div>
+      <div class="scroll-track"><div class="scroll-progress" id="scrollProgress"></div></div>
+      <div id="eventList" class="event-list"></div>
+    </section>
+  </main>
+
+  <!-- 设置弹窗 -->
+  <div id="settingsBackdrop" class="drawer-backdrop hidden"></div>
+  <div id="settingsDialog" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="dialog-head">
+      <h3 id="settingsTitle" data-i18n="panel.settings">Settings</h3>
+      <button id="settingsClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
+    </div>
+    <div class="dialog-body">
       <div class="settings">
         <label class="setting-row">
           <input type="checkbox" id="setKillChildren" />
@@ -52,19 +105,16 @@
           <input type="checkbox" id="setAutoLaunch" />
           <span data-i18n="settings.autoLaunch">Launch this guard automatically at login</span>
         </label>
+        <div class="setting-row">
+          <span data-i18n="settings.scene3d">3D background</span>
+          <select id="sceneSelect" class="lang-select"></select>
+        </div>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2 data-i18n="panel.events">Event Log</h2>
-        <span class="hint" id="eventCount">0</span>
-      </div>
-      <div id="eventList" class="event-list"></div>
-    </section>
-  </main>
-
-  <div id="detailDrawer" class="drawer hidden">
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="detailDrawer" class="drawer hidden">
     <div class="drawer-head">
       <h3 id="drawerTitle" data-i18n="panel.processDetail">Process Detail</h3>
       <button id="drawerClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
@@ -73,8 +123,11 @@
     <div class="drawer-foot">
       <button id="btnKillAll" class="btn btn-danger" data-i18n="btn.killAll">Force-close all programs on this drive</button>
     </div>
-  </div>
+  </aside>
 
+  <script src="./vendor/gsap.min.js"></script>
+  <script src="./vendor/ScrollTrigger.min.js"></script>
   <script src="renderer.js"></script>
+  <script type="module" src="scene3d.js"></script>
 </body>
 </html>

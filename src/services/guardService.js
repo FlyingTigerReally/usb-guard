@@ -110,28 +110,8 @@ function createGuardService(settings) {
     return item;
   }
 
-  // 拔出 → 关闭全部相关进程
-  async function killAllForDrive(driveId) {
-    const item = monitored.get(driveId);
-    if (!item) return { killed: 0 };
-
-    // 拔出瞬间做一次“按需扫描”，抓取最新进程（含最后一次快照之后新启动的）。
-    // 相比只依赖周期快照：更及时，且允许把快照间隔调大以降低常驻 CPU/IO。
-    try {
-      const fresh = await scanDriveProcesses(driveId, item.drive.volumeSerialNumber, null);
-      for (const p of fresh) {
-        if (!item.processes.has(p.pid)) item.processes.set(p.pid, p);
-      }
-    } catch {
-      // 扫描失败则回退到已有快照，保证仍有可关闭目标
-    }
-
-    const pids = [...item.processes.keys()];
-    if (pids.length === 0) {
-      emitEvent(EVT.NO_TRACKED_PROCESS, 1, driveId, { id: driveId });
-      return { killed: 0 };
-    }
-    emitEvent(EVT.KILL_DISPATCHED, 1, driveId, { id: driveId, count: pids.length });
+  // 关杀一批 PID 并逐个汇报结果（从 item.processes 中移除已处理项）
+  async function killAndReport(driveId, item, pids) {
     const results = await killProcesses(pids, settings.killChildren);
     let killed = 0;
     for (const r of results) {
@@ -144,6 +124,49 @@ function createGuardService(settings) {
         emitEvent(EVT.PROCESS_KILL_FAILED, 0, driveId, { name, pid: r.pid, error: r.error });
       }
       item.processes.delete(r.pid);
+    }
+    return killed;
+  }
+
+  // 拔出 → 关闭全部相关进程
+  async function killAllForDrive(driveId) {
+    const item = monitored.get(driveId);
+    if (!item) return { killed: 0 };
+
+    let killed = 0;
+    let dispatched = 0;
+
+    // 第一阶段：用已有快照立即开杀——把"关闭"移出扫描关键路径，
+    // 拔出后即刻动手（~0.5s），而不是等 1s+ 的 PowerShell 扫描
+    const snapshotPids = [...item.processes.keys()];
+    if (snapshotPids.length > 0) {
+      dispatched += snapshotPids.length;
+      emitEvent(EVT.KILL_DISPATCHED, 1, driveId, { id: driveId, count: snapshotPids.length });
+      killed += await killAndReport(driveId, item, snapshotPids);
+    }
+
+    // 第二阶段：按需扫描补杀（捕获最后一次快照之后新启动的进程）；
+    // 扫描失败不影响第一阶段成果，故不需要额外兜底
+    try {
+      const fresh = await scanDriveProcesses(driveId, null);
+      const extraPids = [];
+      for (const p of fresh) {
+        if (!item.processes.has(p.pid)) {
+          item.processes.set(p.pid, p);
+          extraPids.push(p.pid);
+        }
+      }
+      if (extraPids.length > 0) {
+        dispatched += extraPids.length;
+        emitEvent(EVT.KILL_DISPATCHED, 1, driveId, { id: driveId, count: extraPids.length });
+        killed += await killAndReport(driveId, item, extraPids);
+      }
+    } catch {
+      // 扫描失败：快照目标已在第一阶段处理
+    }
+
+    if (dispatched === 0) {
+      emitEvent(EVT.NO_TRACKED_PROCESS, 1, driveId, { id: driveId });
     }
     return { killed };
   }
@@ -166,7 +189,7 @@ function createGuardService(settings) {
     }
     for (const [id, item] of monitored) {
       if (item.enabled !== 1) continue;
-      const baseline = await scanDriveProcesses(id, item.drive.volumeSerialNumber, allProcesses);
+      const baseline = await scanDriveProcesses(id, allProcesses);
       const snapshot = buildSnapshot(baseline, allProcesses || []);
       const next = new Map(snapshot.map((p) => [p.pid, p]));
       item.processes = next;
@@ -180,17 +203,19 @@ function createGuardService(settings) {
     }
   }
 
-  // 驱动器接入
+  // 驱动器接入（含换盘：同盘符但卷序列号变化）
   function handleConnected(drive) {
     const prev = monitored.get(drive.id);
+    const sameVolume = !!prev && prev.drive.volumeSerialNumber === drive.volumeSerialNumber;
     monitored.set(drive.id, {
       drive,
-      processes: prev ? prev.processes : new Map(),
+      // 换盘不继承旧盘的进程集合，避免脏数据混入新盘守护
+      processes: sameVolume ? prev.processes : new Map(),
       enabled: prev ? prev.enabled : 0,
       // 上次快照的进程签名（PID 集合），用于判断快照是否真的变化
-      lastSignature: prev ? prev.lastSignature : '',
+      lastSignature: sameVolume ? prev.lastSignature : '',
     });
-    if (!prev) {
+    if (!sameVolume) {
       emitEvent(EVT.DRIVE_CONNECTED, 1, drive.id, {
         id: drive.id,
         label: drive.label ? ` (${drive.label})` : '',
@@ -215,7 +240,9 @@ function createGuardService(settings) {
       return;
     }
     await killAllForDrive(drive.id);
-    monitored.delete(drive.id);
+    // 仅当监控条目仍是这块盘时才移除：关杀是异步的，
+    // 期间同盘符换新盘（handleConnected 会 set 新条目）不能被误删
+    if (monitored.get(drive.id) === item) monitored.delete(drive.id);
   }
 
   async function start() {

@@ -20,13 +20,15 @@ Portable apps launched from a USB drive keep running silently after the drive is
 
 ## Features
 
-- **Drive monitoring** — polls `Win32_LogicalDisk` and detects removal within ~0.5s
+- **Drive monitoring** — cheap 300ms polling, detects removal in under half a second
 - **Process tracking** — matches processes by executable path prefix (`E:\...`) and expands to child processes
-- **Instant cleanup** — force-closes the full process tree via `taskkill /PID <pid> /F /T`
+- **Two-phase cleanup** — force-closes tracked processes immediately at unplug (~1s), then a fresh scan catches anything started since the last snapshot
 - **Per-drive switch** — enable/disable guarding on each drive independently
 - **Auto-guard** — automatically guards removable disks (USB drives) when they appear
 - **Auto-launch at login** — optional startup with Windows
 - **System tray** — stays resident, close-to-tray supported
+- **Light / dark theme** — follow the system, or pick light/dark manually
+- **3D ambient backgrounds** — Guard Core / Nebula scenes, switchable in Settings (or off)
 - **Bilingual UI** — English / 简体中文, switchable at runtime
 - **No backend, no telemetry** — all data comes from local Windows system APIs, works fully offline
 
@@ -56,37 +58,40 @@ The tray icon keeps the guard running in the background. Right-click it for **Sh
 
 ## Settings
 
-| Setting                                | Default | Description                                                  |
-| -------------------------------------- | ------- | ------------------------------------------------------------ |
-| Also force-close child processes       | On      | Close the whole process tree (`taskkill /T`)                 |
-| Auto-guard removable disks             | On      | Enable guarding automatically for USB drives (driveType = 2) |
-| Minimize to tray when window is closed | On      | Keep guarding in the background                              |
-| Launch at login                        | On      | Register/unregister Windows auto-start                       |
-| Language                               | English | UI language: English / 简体中文                              |
+| Setting                                | Default       | Description                                                  |
+| -------------------------------------- | ------------- | ------------------------------------------------------------ |
+| Also force-close child processes       | On            | Close the whole process tree (`taskkill /T`)                 |
+| Auto-guard removable disks             | On            | Enable guarding automatically for USB drives (driveType = 2) |
+| Minimize to tray when window is closed | On            | Keep guarding in the background                              |
+| Launch at login                        | On            | Register/unregister Windows auto-start                       |
+| Theme                                  | Follow system | Follow system / Light / Dark                                 |
+| 3D background                          | Guard Core    | Ambient scene: Guard Core / Nebula / Off                     |
+| Language                               | English       | UI language: English / 简体中文                              |
 
 ## How It Works
 
 Drive detection uses a **two-layer scheme** to stay responsive without wasting CPU:
 
 ```
-  fast layer (every 500ms, no subprocess)          full scan (PowerShell)
+  fast layer (every 300ms, no subprocess)          full scan (PowerShell)
 ┌────────────────────┐    drive appears/gone     ┌───────────────────┐
 │ fs.existsSync(root)│ ────────────────────────▶ │ Win32_LogicalDisk │  confirm + detail
 └─────────┬──────────┘                           └───────────────────┘
           │ drive removed
           ▼
-┌────────────────────┐   snapshot every 5s       ┌───────────────────┐
-│   Guard Service    │ ────────────────────────▶ │  Win32_Process    │
+┌────────────────────┐  phase 1: kill snapshot   ┌───────────────────┐
+│   Guard Service    │ ────────────────────────▶ │  taskkill /T /F   │  (~1s after unplug)
 └─────────┬──────────┘                           └───────────────────┘
-          │ unplug detected → force-close tracked PIDs
+          │ phase 2: fresh scan → kill anything new
           ▼
-┌────────────────────┐
-│  taskkill /T /F    │  (full process tree)
-└────────────────────┘
+┌────────────────────┐   snapshot every 5s       ┌───────────────────┐
+│  kill dispatch     │ ◀──────────────────────── │  Win32_Process    │
+└────────────────────┘                           └───────────────────┘
 ```
 
-- **Fast layer** — a cheap `fs.existsSync` probe of each drive root every 500ms; a full PowerShell scan only runs when a drive actually appears or disappears.
-- **Snapshot** — a process snapshot is refreshed every 5s (and on demand at unplug time, to catch processes started right before removal).
+- **Fast layer** — a cheap `fs.existsSync` probe of each drive root every 300ms; a full PowerShell scan only runs when a drive actually appears or disappears.
+- **Two-phase cleanup** — at unplug time, tracked processes from the latest snapshot are killed immediately (~1s after unplug), then an on-demand scan catches anything started since the last snapshot and kills those too.
+- **Snapshot** — a process snapshot is refreshed every 5s (kept large on purpose: cleanup no longer depends on it being fresh).
 - Devices where the root probe is unreliable (network / optical drives) fall back to periodic full scans only.
 
 A process is considered "launched from the drive" when its executable path starts with the drive root (e.g. `E:\`) or its command line references the drive root. Child processes under the same root are included recursively.
@@ -118,7 +123,7 @@ usb-guard/
 │   │   ├── guardService.js  # orchestration + event log
 │   │   ├── settings.js      # settings persistence
 │   │   └── ps.js            # PowerShell invocation helper
-│   └── renderer/            # UI (HTML / CSS / JS)
+│   └── renderer/            # UI (HTML / CSS / JS + Three.js scenes)
 └── package.json
 ```
 
@@ -137,9 +142,11 @@ Settings are stored in `%APPDATA%/usb-guard/settings.json`. All state flags use 
   "killChildren": 1,
   "autoGuardRemovable": 1,
   "snapshotIntervalMs": 5000,
-  "removePollMs": 500,
+  "removePollMs": 300,
   "autoLaunch": 1,
-  "language": "en"
+  "language": "en",
+  "theme": "system",
+  "scene3d": "core"
 }
 ```
 

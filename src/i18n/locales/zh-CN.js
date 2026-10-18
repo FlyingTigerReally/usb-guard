@@ -15,6 +15,10 @@ module.exports = {
   'tray.show': '显示主界面',
   'tray.exit': '退出',
   'language.label': '语言',
+  'theme.label': '主题',
+  'theme.system': '跟随系统',
+  'theme.light': '浅色',
+  'theme.dark': '深色',
 
   // ---------- 应用菜单栏 ----------
   'menu.file': '文件',
@@ -43,8 +47,17 @@ module.exports = {
   'about.title': '关于 USB Guard',
   'about.message': 'USB Guard - U盘拔出自动关闭程序',
   'about.detail':
-    '版本 1.0.0\n\n检测 U 盘拔出后，自动关闭从该 U 盘启动的全部程序。\n数据来源：Windows 本地系统 API。',
+    '版本 1.1.0\n\n检测 U 盘拔出后，自动关闭从该 U 盘启动的全部程序。\n数据来源：Windows 本地系统 API。',
   'about.ok': '确定',
+
+  // ---------- 仪表读数 ----------
+  'stat.guarded': '守护中',
+  'stat.drives': '个驱动器',
+  'stat.processes': '已追踪进程',
+  'stat.procsUnit': '个',
+  'stat.events': '事件记录',
+  'stat.eventsUnit': '条',
+  'stat.watching': '驱动器监听运行中',
 
   // ---------- 面板 ----------
   'panel.drives': '驱动器列表',
@@ -56,6 +69,7 @@ module.exports = {
 
   // ---------- 按钮 ----------
   'btn.refresh': '刷新快照',
+  'btn.settings': '设置',
   'btn.refreshing': '刷新中…',
   'btn.close': '关闭',
   'btn.killAll': '立即关闭该盘全部程序',
@@ -81,6 +95,10 @@ module.exports = {
   'settings.autoGuard': '检测到可移动磁盘（U盘）时自动开启守护',
   'settings.minimizeToTray': '关闭窗口时最小化到托盘（常驻守护）',
   'settings.autoLaunch': '开机自动启动本守护',
+  'settings.scene3d': '3D 背景样式',
+  'scene.core': '守护核心',
+  'scene.nebula': '粒子星云',
+  'scene.off': '关闭',
 
   // ---------- 空状态 ----------
   'empty.noDrives': '未检测到非系统驱动器',
