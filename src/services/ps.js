@@ -16,7 +16,10 @@ const POWERSHELL = 'powershell.exe';
  * @returns {Promise<string>} stdout
  */
 function runPs(script, options = {}) {
-  const encoded = Buffer.from(script, 'utf16le').toString('base64');
+  // PowerShell 重定向输出默认使用系统 OEM 代码页（中文系统为 GBK），
+  // Node 按 UTF-8 解码会乱码，故强制 PS 以 UTF-8 输出
+  const full = "try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}\n" + script;
+  const encoded = Buffer.from(full, 'utf16le').toString('base64');
   return new Promise((resolve, reject) => {
     execFile(
       POWERSHELL,

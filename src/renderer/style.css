@@ -38,16 +38,8 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 14px; }
 .brand-logo {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: linear-gradient(135deg, var(--blue), #60a5fa);
-  position: relative;
-}
-.brand-logo::after {
-  content: "";
-  position: absolute; inset: 11px 10px 12px 10px;
-  background: #dbeafe;
-  border-radius: 3px;
-  clip-path: polygon(0 35%, 42% 35%, 42% 0, 58% 0, 58% 35%, 100% 35%, 100% 100%, 0 100%);
+  width: 40px; height: 40px;
+  object-fit: contain;
 }
 .brand h1 { font-size: 18px; font-weight: 600; letter-spacing: .5px; }
 .brand p { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
@@ -84,6 +76,24 @@ body {
 .btn-ghost:hover { background: var(--panel-2); }
 .btn-danger { background: var(--red); }
 .btn-danger:hover { background: #dc2626; }
+
+/* 忙碌态：禁用点击 + 文字后转圈，提示操作执行中 */
+.btn:disabled { cursor: default; opacity: .75; }
+.btn:disabled:hover { background: var(--blue); }
+.btn-danger:disabled:hover { background: var(--red); }
+.btn.is-loading::after {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin .8s linear infinite;
+  vertical-align: -2px;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
 
 /* ============ 徽标 ============ */
 .badge {

@@ -41,6 +41,22 @@ let state = {
 let currentDriveId = null;
 
 // ============ 工具函数 ============
+// 按钮忙碌态：禁用 + 转圈 + 换文案，既防重复点击，也让用户知道操作在执行中。
+// 返回 false 表示按钮已在忙碌中，调用方应直接放弃本次点击。
+function setBtnBusy(btn, busyKey) {
+  if (btn.disabled) return false;
+  btn.disabled = true;
+  btn.classList.add('is-loading');
+  btn.textContent = t(busyKey);
+  return true;
+}
+
+function setBtnIdle(btn, idleKey) {
+  btn.disabled = false;
+  btn.classList.remove('is-loading');
+  btn.textContent = t(idleKey);
+}
+
 function fmtTime(ts) {
   const d = new Date(ts);
   const p = (n) => String(n).padStart(2, '0');
@@ -142,7 +158,15 @@ function renderDrives() {
     });
   });
   box.querySelectorAll('.btn-detail').forEach((el) => {
-    el.addEventListener('click', (e) => openDrawer(e.target.dataset.drive));
+    el.addEventListener('click', async (e) => {
+      const driveId = e.target.dataset.drive;
+      openDrawer(driveId);
+      // 按需即时扫描：打开进程详情时立即刷新一次快照，不必等周期轮询（默认 5s）。
+      // 故意不放进 openDrawer()：切语言等场景会复用 openDrawer 重渲染，不应触发扫描。
+      state.drives = await api.refresh();
+      renderDrives();
+      if (currentDriveId === driveId) renderDrawerBody();
+    });
   });
 }
 
@@ -296,18 +320,30 @@ async function init() {
   });
 
   document.getElementById('btnRefresh').addEventListener('click', async () => {
-    state.drives = await api.refresh();
-    await refreshDriveProcesses();
-    renderDrives();
+    const btn = document.getElementById('btnRefresh');
+    if (!setBtnBusy(btn, 'btn.refreshing')) return;
+    try {
+      state.drives = await api.refresh();
+      await refreshDriveProcesses();
+      renderDrives();
+    } finally {
+      setBtnIdle(btn, 'btn.refresh');
+    }
   });
   document.getElementById('drawerClose').addEventListener('click', closeDrawer);
   document.getElementById('btnKillAll').addEventListener('click', async () => {
     if (!currentDriveId) return;
-    await api.killAll(currentDriveId);
-    state.drives = await api.refresh();
-    await refreshDriveProcesses();
-    renderDrives();
-    renderDrawerBody();
+    const btn = document.getElementById('btnKillAll');
+    if (!setBtnBusy(btn, 'btn.killing')) return;
+    try {
+      await api.killAll(currentDriveId);
+      state.drives = await api.refresh();
+      await refreshDriveProcesses();
+      renderDrives();
+      renderDrawerBody();
+    } finally {
+      setBtnIdle(btn, 'btn.killAll');
+    }
   });
 }
 

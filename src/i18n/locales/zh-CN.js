@@ -56,8 +56,10 @@ module.exports = {
 
   // ---------- 按钮 ----------
   'btn.refresh': '刷新快照',
+  'btn.refreshing': '刷新中…',
   'btn.close': '关闭',
   'btn.killAll': '立即关闭该盘全部程序',
+  'btn.killing': '关闭中…',
   'btn.detail': '明细',
 
   // ---------- 驱动器卡片 ----------

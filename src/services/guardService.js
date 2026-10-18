@@ -82,7 +82,12 @@ function createGuardService(settings) {
         processList: [...item.processes.values()],
       });
     }
-    return list;
+    // U 盘（可移动磁盘，driveType=2）排前面，其余按盘符排序
+    return list.sort((a, b) => {
+      const ra = Number(a.driveType) === 2 ? 0 : 1;
+      const rb = Number(b.driveType) === 2 ? 0 : 1;
+      return ra - rb || a.id.localeCompare(b.id);
+    });
   }
 
   function getProcesses(driveId) {

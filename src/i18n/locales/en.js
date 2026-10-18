@@ -56,8 +56,10 @@ module.exports = {
 
   // ---------- Buttons ----------
   'btn.refresh': 'Refresh Snapshot',
+  'btn.refreshing': 'Refreshing…',
   'btn.close': 'Close',
   'btn.killAll': 'Force-close all programs on this drive',
+  'btn.killing': 'Closing…',
   'btn.detail': 'Detail',
 
   // ---------- Drive card ----------
