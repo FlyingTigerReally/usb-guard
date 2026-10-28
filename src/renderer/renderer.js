@@ -292,6 +292,8 @@ function renderSettings() {
   document.getElementById('setAutoGuard').checked = s.autoGuardRemovable === 1;
   document.getElementById('setMinimizeToTray').checked = s.minimizeToTray === 1;
   document.getElementById('setAutoLaunch').checked = s.autoLaunch === 1;
+  document.getElementById('setLockAlert').checked = s.lockAlert === 1;
+  document.getElementById('setLockInterval').value = String(Math.min(600, Math.max(5, Number(s.lockAlertIntervalSec) || 30)));
   renderSceneSelect();
 }
 
@@ -314,6 +316,14 @@ function bindSettings() {
   bind('setAutoGuard', 'autoGuardRemovable');
   bind('setMinimizeToTray', 'minimizeToTray');
   bind('setAutoLaunch', 'autoLaunch');
+  bind('setLockAlert', 'lockAlert');
+
+  // 提醒间隔（秒）：5 ~ 600，输入后夹取并回写
+  document.getElementById('setLockInterval').addEventListener('change', async (e) => {
+    const v = Math.min(600, Math.max(5, Number(e.target.value) || 30));
+    e.target.value = String(v);
+    state.settings = await api.updateSettings({ lockAlertIntervalSec: v });
+  });
 
   // 3D 背景切换：持久化 + 通知场景层。
   // 初始值同时经 data-scene3d（scene3d.js 启动时读取）与事件（运行时切换）双通道传递，
@@ -476,6 +486,44 @@ function closeDrawer() {
   backdrop.classList.add('hidden');
 }
 
+// ============ 关于弹窗 ============
+let aboutOpen = false;
+
+function openAbout() {
+  if (aboutOpen) return;
+  aboutOpen = true;
+  const dialog = document.getElementById('aboutDialog');
+  const backdrop = document.getElementById('aboutBackdrop');
+  dialog.classList.remove('hidden');
+  backdrop.classList.remove('hidden');
+  document.getElementById('aboutVersion').textContent = 'v' + (state.version || '');
+  document.getElementById('aboutClose').focus();
+  if (window.gsap) {
+    gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' });
+    gsap.fromTo(dialog, { y: 18, opacity: 0 }, {
+      y: 0, opacity: 1, duration: 0.35, ease: 'power3.out', clearProps: 'transform,opacity',
+    });
+  }
+}
+
+function closeAbout() {
+  if (!aboutOpen) return;
+  aboutOpen = false;
+  const dialog = document.getElementById('aboutDialog');
+  const backdrop = document.getElementById('aboutBackdrop');
+  const done = () => {
+    dialog.classList.add('hidden');
+    backdrop.classList.add('hidden');
+    if (window.gsap) gsap.set([dialog, backdrop], { clearProps: 'transform,opacity' });
+  };
+  if (window.gsap) {
+    gsap.to(backdrop, { opacity: 0, duration: 0.18, ease: 'power2.in' });
+    gsap.to(dialog, { y: 12, opacity: 0, duration: 0.22, ease: 'power2.in', onComplete: done });
+    return;
+  }
+  done();
+}
+
 // ============ 设置弹窗 ============
 let settingsOpen = false;
 
@@ -588,7 +636,8 @@ async function init() {
   document.getElementById('drawerBackdrop').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    // Esc 优先关闭最上层：设置弹窗 → 进程抽屉
+    // Esc 优先关闭最上层：关于/设置弹窗 → 进程抽屉
+    if (aboutOpen) { closeAbout(); return; }
     if (settingsOpen) { closeSettings(); return; }
     if (currentDriveId) closeDrawer();
   });
@@ -597,6 +646,15 @@ async function init() {
   document.getElementById('btnSettings').addEventListener('click', openSettings);
   document.getElementById('settingsClose').addEventListener('click', closeSettings);
   document.getElementById('settingsBackdrop').addEventListener('click', closeSettings);
+
+  // 关于弹窗（菜单触发 + 仓库链接用系统浏览器打开）
+  document.getElementById('aboutClose').addEventListener('click', closeAbout);
+  document.getElementById('aboutBackdrop').addEventListener('click', closeAbout);
+  document.getElementById('aboutRepoLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    api.openExternal('https://github.com/FlyingTigerReally/usb-guard');
+  });
+  api.onShowAbout(openAbout);
   document.getElementById('btnKillAll').addEventListener('click', async () => {
     if (!currentDriveId) return;
     const btn = document.getElementById('btnKillAll');

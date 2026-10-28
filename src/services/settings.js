@@ -44,6 +44,14 @@ const DEFAULTS = {
 
   // 3D 背景样式：'core' = 守护核心，'nebula' = 粒子星云，'off' = 关闭
   scene3d: 'core',
+
+  // 1 = 锁屏离开时U盘未拔，解锁后四角红光警示；0 = 关闭
+  // 说明：Windows 锁屏画面为系统安全桌面，无法在其上覆盖显示，
+  //       故警示在解锁回到桌面的瞬间触发（锁屏期间U盘已拔出则不警示）
+  lockAlert: 0,
+
+  // 锁屏警示的通知间隔（秒），有效范围 5 ~ 600
+  lockAlertIntervalSec: 30,
 };
 
 let data = { ...DEFAULTS };

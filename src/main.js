@@ -3,7 +3,7 @@
  * ---------------------------------------------------------------
  * 职责：创建窗口 / 托盘 / IPC / 启动守护服务
  */
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, dialog } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, dialog, powerMonitor, Notification, shell } = require('electron');
 const path = require('path');
 const settings = require('./services/settings');
 const { createGuardService } = require('./services/guardService');
@@ -155,13 +155,11 @@ function buildAppMenu() {
         {
           label: t('menu.about'),
           click: () => {
-            dialog.showMessageBox({
-              type: 'info',
-              title: t('about.title'),
-              message: t('about.message'),
-              detail: t('about.detail'),
-              buttons: [t('about.ok')],
-            });
+            // 自定义关于弹窗（渲染层），带可点击的仓库链接
+            if (mainWindow) {
+              mainWindow.show();
+              mainWindow.webContents.send('app:showAbout');
+            }
           },
         },
       ],
@@ -196,7 +194,13 @@ function setupIpc() {
     settings: settings.data,
     locale: getLocale(),
     localeOptions: LOCALE_OPTIONS,
+    version: app.getVersion(),
   }));
+
+  // 用系统浏览器打开外链
+  ipcMain.handle('app:openExternal', (_e, url) => {
+    if (typeof url === 'string' && /^https:\/\//i.test(url)) shell.openExternal(url);
+  });
 
   // 取语言包（渲染层用它渲染界面文案）
   ipcMain.handle('app:getI18n', (_e, code) => ({
@@ -244,7 +248,57 @@ function setupIpc() {
   });
 }
 
+/**
+ * 锁屏警示：锁屏离开时U盘未拔，锁屏期间持续通知提醒
+ * ---------------------------------------------------------------
+ * Toast 通知会显示在 Windows 锁屏界面上（Win+L / 自动锁屏同样生效，
+ * 需系统开启"在锁屏界面上显示通知"，默认开启）。
+ */
+function hasUsbDrive() {
+  // 可移动磁盘（U盘），或用户手动守护的非系统盘
+  return guard.getDrives().some(
+    (d) => d.isSystem !== 1 && (Number(d.driveType) === 2 || d.enabled === 1)
+  );
+}
+
+function setupLockAlert() {
+  let notifyTimer = null;
+
+  const stopNotify = () => {
+    if (notifyTimer) {
+      clearInterval(notifyTimer);
+      notifyTimer = null;
+    }
+  };
+
+  const sendLockNotification = () => {
+    // 拔盘即停：发送前再检查一次，锁屏期间拔掉就不再提醒
+    if (!hasUsbDrive()) {
+      stopNotify();
+      return;
+    }
+    const n = new Notification({
+      title: t('notify.title'),
+      body: t('notify.body'),
+    });
+    n.show();
+  };
+
+  powerMonitor.on('lock-screen', () => {
+    if (settings.data.lockAlert !== 1) return;
+    if (!hasUsbDrive()) return;
+    sendLockNotification();
+    // 间隔可在设置里调整（秒，5~600）
+    const sec = Math.min(600, Math.max(5, Number(settings.data.lockAlertIntervalSec) || 30));
+    notifyTimer = setInterval(sendLockNotification, sec * 1000);
+  });
+
+  powerMonitor.on('unlock-screen', stopNotify);
+}
+
 app.whenReady().then(() => {
+  // 通知身份（与打包 appId 一致）：保证 Toast 通知正常弹出
+  app.setAppUserModelId('com.local.usbguard');
   settings.init(app.getPath('userData'));
   // 语言优先级：用户配置 > 系统语言 > 英文
   const sysLocale = app.getLocale();
@@ -260,6 +314,7 @@ app.whenReady().then(() => {
   createTray();
   buildAppMenu();
   setupIpc();
+  setupLockAlert();
   guard.start();
 
   // 启动时把配置里的自启状态同步到系统登录项（以配置为准）

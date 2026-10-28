@@ -20,4 +20,8 @@ contextBridge.exposeInMainWorld('usbGuard', {
   getI18n: (code) => ipcRenderer.invoke('app:getI18n', code),
   // 订阅实时事件
   onEvent: (fn) => ipcRenderer.on('guard:event', (_e, evt) => fn(evt)),
+  // 菜单触发"关于"弹窗
+  onShowAbout: (fn) => ipcRenderer.on('app:showAbout', () => fn()),
+  // 用系统浏览器打开外链
+  openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
 });

@@ -45,9 +45,8 @@ module.exports = {
 
   // ---------- About dialog ----------
   'about.title': 'About USB Guard',
-  'about.message': 'USB Guard - Auto-close USB programs on unplug',
-  'about.detail':
-    'Version 1.1.0\n\nDetects when a USB drive is unplugged and force-closes every program launched from that drive.\nData source: local Windows system APIs.',
+  'about.detail': 'Auto-close every program launched from a USB drive the moment it is unplugged.\nData source: local Windows system APIs.',
+  'about.repo': 'Repository',
   'about.ok': 'OK',
 
   // ---------- Readout ----------
@@ -96,9 +95,15 @@ module.exports = {
   'settings.minimizeToTray': 'Minimize to tray when the window is closed (stay resident)',
   'settings.autoLaunch': 'Launch this guard automatically at login',
   'settings.scene3d': '3D background',
+  'settings.lockAlert': 'Keep notifying on the lock screen if a USB drive is left plugged in while locked',
+  'settings.lockInterval': 'Notify interval (seconds)',
   'scene.core': 'Guard Core',
   'scene.nebula': 'Nebula',
   'scene.off': 'Off',
+
+  // ---------- Lock alert ----------
+  'notify.title': 'USB Drive Alert',
+  'notify.body': 'The computer is locked and a USB drive is still plugged in. Please unplug it.',
 
   // ---------- Empty states ----------
   'empty.noDrives': 'No non-system drives detected',

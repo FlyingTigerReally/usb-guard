@@ -80,6 +80,25 @@
     </section>
   </main>
 
+  <!-- 关于弹窗 -->
+  <div id="aboutBackdrop" class="drawer-backdrop hidden"></div>
+  <div id="aboutDialog" class="dialog about hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="dialog-head">
+      <h3 id="aboutTitle" data-i18n="about.title">About USB Guard</h3>
+      <button id="aboutClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
+    </div>
+    <div class="dialog-body about-body">
+      <img class="about-logo" src="../../assets/icons/app-256.png" alt="" />
+      <div class="about-name">USB Guard</div>
+      <div class="about-version" id="aboutVersion">v1.1.0</div>
+      <p class="about-desc" data-i18n="about.detail">Auto-close programs launched from a USB drive once it is unplugged</p>
+      <div class="about-repo">
+        <span class="about-repo-label" data-i18n="about.repo">Repository</span>
+        <a class="about-link" id="aboutRepoLink" href="#" title="https://github.com/FlyingTigerReally/usb-guard">github.com/FlyingTigerReally/usb-guard</a>
+      </div>
+    </div>
+  </div>
+
   <!-- 设置弹窗 -->
   <div id="settingsBackdrop" class="drawer-backdrop hidden"></div>
   <div id="settingsDialog" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
@@ -108,6 +127,14 @@
         <div class="setting-row">
           <span data-i18n="settings.scene3d">3D background</span>
           <select id="sceneSelect" class="lang-select"></select>
+        </div>
+        <label class="setting-row">
+          <input type="checkbox" id="setLockAlert" />
+          <span data-i18n="settings.lockAlert">Flash red corners on unlock if a USB drive was left plugged in while locked</span>
+        </label>
+        <div class="setting-row">
+          <span data-i18n="settings.lockInterval">Notify interval (seconds)</span>
+          <input type="number" id="setLockInterval" class="lang-select num-input" min="5" max="600" step="5" />
         </div>
       </div>
     </div>

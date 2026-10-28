@@ -45,9 +45,8 @@ module.exports = {
 
   // ---------- 关于弹窗 ----------
   'about.title': '关于 USB Guard',
-  'about.message': 'USB Guard - U盘拔出自动关闭程序',
-  'about.detail':
-    '版本 1.1.0\n\n检测 U 盘拔出后，自动关闭从该 U 盘启动的全部程序。\n数据来源：Windows 本地系统 API。',
+  'about.detail': '检测 U 盘拔出后，自动关闭从该 U 盘启动的全部程序。\n数据来源：Windows 本地系统 API。',
+  'about.repo': '代码仓库',
   'about.ok': '确定',
 
   // ---------- 仪表读数 ----------
@@ -96,9 +95,15 @@ module.exports = {
   'settings.minimizeToTray': '关闭窗口时最小化到托盘（常驻守护）',
   'settings.autoLaunch': '开机自动启动本守护',
   'settings.scene3d': '3D 背景样式',
+  'settings.lockAlert': '锁屏离开时U盘未拔，锁屏期间持续通知提醒',
+  'settings.lockInterval': '提醒间隔（秒）',
   'scene.core': '守护核心',
   'scene.nebula': '粒子星云',
   'scene.off': '关闭',
+
+  // ---------- 锁屏警示 ----------
+  'notify.title': 'U 盘未拔出警示',
+  'notify.body': '电脑处于锁屏状态且U盘仍插在主机上，请尽快返回拔出。',
 
   // ---------- 空状态 ----------
   'empty.noDrives': '未检测到非系统驱动器',

@@ -1,6 +1,6 @@
 {
   "name": "usb-guard",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "U盘拔出后自动关闭从该U盘启动的程序（Windows）",
   "main": "src/main.js",
   "scripts": {
