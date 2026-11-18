@@ -1,11 +1,17 @@
 /** Integration check: real Electron window/preload/IPC; isolated fake drives, no OS guard actions. */
 const { app, BrowserWindow, Menu, dialog } = require("electron");
+// Verification needs the window visually un-occluded: Chromium marks occluded
+// windows hidden, which by design suspends the pointer overlay and RAF chains.
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const assert = require("assert/strict");
 const root = path.resolve(__dirname, "..");
 const fallback = process.argv.includes("--verify-no-webgl");
+const langArg = process.argv.find((a) => a.startsWith("--lang="));
+const lang = langArg ? langArg.slice("--lang=".length) : "zh-CN";
+const shotPrefix = lang.startsWith("zh") ? "zh-" : "en-";
 if (fallback) {
   const Module = require("module");
   const load = Module._load;
@@ -41,7 +47,7 @@ const settings = require("../src/services/settings");
 settings.init(userData);
 settings.update({
   autoLaunch: 0,
-  language: "zh-CN",
+  language: lang,
   theme: "light",
   minimizeToTray: 1,
 });
@@ -176,6 +182,7 @@ async function run() {
     await wait(100);
   }
   assert(win);
+  win.setAlwaysOnTop(true);
   const evaluate = async (code) => {
     try {
       return await win.webContents.executeJavaScript(code);
@@ -188,7 +195,7 @@ async function run() {
     evaluate("document.getElementById(" + JSON.stringify(id) + ").click()");
   const shot = async (name) =>
     fs.promises.writeFile(
-      path.join(output, name + ".png"),
+      path.join(output, shotPrefix + name + ".png"),
       (await win.webContents.capturePage()).toPNG(),
     );
   const sweep = async (cx = 350, cy = 540, name) => {
@@ -231,9 +238,14 @@ async function run() {
   checks.push(
     fallback ? "WebGL fallback" : "independent GLSL pipeline compiled",
   );
-  const visible = await evaluate(
-    '(()=>{const r=document.getElementById("driveList").getBoundingClientRect();return [...document.querySelectorAll(".drive-card")].filter(el=>{const c=el.getBoundingClientRect();return c.top>=r.top && c.bottom<=r.bottom}).length})()',
-  );
+  let visible = 0;
+  for (let i = 0; i < 30; i++) {
+    visible = await evaluate(
+      '(()=>{const r=document.getElementById("driveList").getBoundingClientRect();return [...document.querySelectorAll(".drive-card")].filter(el=>{const c=el.getBoundingClientRect();return c.top>=r.top && c.bottom<=r.bottom}).length})()',
+    );
+    if (visible >= 6) break;
+    await wait(100);
+  }
   assert(
     visible >= 6,
     "six drive cards fully visible at default window: " + visible,
@@ -251,10 +263,22 @@ async function run() {
   assert.equal(await evaluate('getComputedStyle(document.getElementById("pointerPaint")).pointerEvents'), "none");
   if(!fallback){
     await sweep(350, 550, "pointer-liquid-light");
-    assert.equal(await evaluate('document.documentElement.dataset.pointerIdle'),"false");
+    for (let i = 0; i < 30; i++) {
+      if ((await evaluate('document.documentElement.dataset.pointerIdle')) === "false") break;
+      await wait(100);
+    }
+    assert.equal(
+      await evaluate('document.documentElement.dataset.pointerIdle'),
+      "false",
+      JSON.stringify(await evaluate('(async()=>{const {pointerInput}=await import("./pointer-paint.js");return {...pointerInput,hidden:document.hidden,focus:document.hasFocus(),reduced:matchMedia("(prefers-reduced-motion: reduce)").matches,ready:document.documentElement.dataset.pointerReady,canvasHidden:document.getElementById("pointerPaint").hidden}})()')),
+    );
     win.webContents.sendInputEvent({type:"mouseMove",x:900,y:18});
-    await wait(3500);
-    const pointerState=await evaluate('(async()=>{const {pointerInput}=await import("./pointer-paint.js");return {now:performance.now(),...pointerInput,hidden:document.hidden,focus:document.hasFocus(),idle:document.documentElement.dataset.pointerIdle}})()');
+    let pointerState;
+    for (let i = 0; i < 80; i++) {
+      pointerState=await evaluate('(async()=>{const {pointerInput}=await import("./pointer-paint.js");return {now:performance.now(),...pointerInput,hidden:document.hidden,focus:document.hasFocus(),idle:document.documentElement.dataset.pointerIdle}})()');
+      if (pointerState.idle === "true") break;
+      await wait(100);
+    }
     assert.equal(pointerState.idle,"true",JSON.stringify(pointerState));
     checks.push("global liquid pointer renders and stops when idle");
   }
@@ -570,18 +594,6 @@ async function run() {
     'document.querySelector("[data-settings-tab=appearance]").click()',
   );
   await evaluate(
-    'document.getElementById("langSelect").value="en";document.getElementById("langSelect").dispatchEvent(new Event("change"))',
-  );
-  await wait(250);
-  assert.equal(await evaluate("document.documentElement.lang"), "en");
-  assert.equal(
-    await evaluate(
-      '[...document.querySelectorAll("[data-i18n]")].filter(el=>el.textContent===el.dataset.i18n).map(el=>el.dataset.i18n).join(",")',
-    ),
-    "",
-  );
-  checks.push("complete English and Chinese strings");
-  await evaluate(
     'document.getElementById("themeSelect").value="dark";document.getElementById("themeSelect").dispatchEvent(new Event("change"))',
   );
   await wait(200);
@@ -595,6 +607,25 @@ async function run() {
   await shot("desktop-dark");
   if(!fallback) await sweep(350,550,"pointer-liquid-dark");
   checks.push("dark theme");
+  await click("btnSettings");
+  await wait(300);
+  await evaluate(
+    'document.querySelector("[data-settings-tab=appearance]").click()',
+  );
+  await evaluate(
+    'document.getElementById("langSelect").value="en";document.getElementById("langSelect").dispatchEvent(new Event("change"))',
+  );
+  await wait(250);
+  assert.equal(await evaluate("document.documentElement.lang"), "en");
+  assert.equal(
+    await evaluate(
+      '[...document.querySelectorAll("[data-i18n]")].filter(el=>el.textContent===el.dataset.i18n).map(el=>el.dataset.i18n).join(",")',
+    ),
+    "",
+  );
+  checks.push("complete English and Chinese strings");
+  await click("settingsClose");
+  await wait(300);
   win.setSize(820, 640);
   await wait(400);
   const geometry = await evaluate(

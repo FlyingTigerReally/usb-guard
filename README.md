@@ -32,6 +32,36 @@ Portable apps launched from a USB drive keep running silently after the drive is
 - **Bilingual UI** — English / 简体中文, switchable at runtime
 - **No backend, no telemetry** — all data comes from local Windows system APIs, works fully offline
 
+## Screenshots
+
+The UI ships in both English and 简体中文, switchable at runtime.
+
+### English UI
+
+| Light | Dark |
+| :---: | :---: |
+| ![English dashboard, light theme](docs/screenshots/en/dashboard-light.png) | ![English dashboard, dark theme](docs/screenshots/en/dashboard-dark.png) |
+
+<p align="center">
+  <img src="docs/screenshots/en/event-log.png" width="49%" alt="English event log dialog with search and error filter" />
+  <img src="docs/screenshots/en/settings.png" width="49%" alt="English settings dialog, appearance tab" />
+  <img src="docs/screenshots/en/guard-universe.png" width="49%" alt="English guard universe scroll experience" />
+  <img src="docs/screenshots/en/liquid-pointer.png" width="49%" alt="Liquid pointer trail over the English workspace" />
+</p>
+
+### 中文界面
+
+| 浅色主题 | 深色主题 |
+| :---: | :---: |
+| ![中文工作台浅色主题](docs/screenshots/zh/dashboard-light.png) | ![中文工作台深色主题](docs/screenshots/zh/dashboard-dark.png) |
+
+<p align="center">
+  <img src="docs/screenshots/zh/event-log.png" width="49%" alt="中文事件日志：搜索与异常筛选" />
+  <img src="docs/screenshots/zh/settings.png" width="49%" alt="中文设置弹窗：外观与动效" />
+  <img src="docs/screenshots/zh/guard-universe.png" width="49%" alt="中文守护宇宙滚动体验" />
+  <img src="docs/screenshots/zh/liquid-pointer.png" width="49%" alt="中文工作台上的液体鼠标拖尾" />
+</p>
+
 ## Requirements
 
 - Windows 10 / 11
