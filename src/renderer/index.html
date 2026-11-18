@@ -1,160 +1,879 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
-  <title>USB Guard</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <!-- 3D 主视觉：Guard Core 沉浸式背景（WebGL 不可用时自动隐藏，CSS 渐变兜底） -->
-  <canvas id="hero3d"></canvas>
-
-  <header class="topbar">
-    <div class="brand">
-      <img class="brand-logo" src="../../assets/icons/app-128.png" alt="" />
-      <div class="brand-text">
-        <h1 data-i18n="app.title">USB Guard</h1>
-        <p data-i18n="app.subtitle">Auto-close programs launched from a USB drive once it is unplugged</p>
+<!doctype html>
+<html lang="en" data-view="devices">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'"
+    />
+    <title>USB Guard</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="titlebar">
+      <div class="titlebar-brand">
+        <img src="../../assets/icons/app-128.png" alt="" /><span
+          >USB GUARD</span
+        >
       </div>
-    </div>
-    <div class="top-actions">
-      <div class="lang-box">
-        <span class="lang-label" data-i18n="theme.label">Theme</span>
-        <select id="themeSelect" class="lang-select"></select>
-      </div>
-      <div class="lang-box">
-        <span class="lang-label" data-i18n="language.label">Language</span>
-        <select id="langSelect" class="lang-select"></select>
-      </div>
-      <button id="btnSettings" class="btn btn-ghost" data-i18n="btn.settings">Settings</button>
-      <button id="btnRefresh" class="btn" data-i18n="btn.refresh">Refresh Snapshot</button>
-    </div>
-  </header>
-
-  <!-- 仪表读数带：守护中的盘 / 已追踪进程 / 事件数 + 监听状态 -->
-  <div class="readout">
-    <div class="readout-item">
-      <div class="readout-label" data-i18n="stat.guarded">Guarded</div>
-      <div class="readout-value">
-        <span class="stat-value" id="statGuarded">0</span>
-        <span class="readout-unit" data-i18n="stat.drives">drives</span>
-      </div>
-    </div>
-    <div class="readout-item">
-      <div class="readout-label" data-i18n="stat.processes">Tracked processes</div>
-      <div class="readout-value">
-        <span class="stat-value" id="statProcesses">0</span>
-        <span class="readout-unit" data-i18n="stat.procsUnit">procs</span>
-      </div>
-    </div>
-    <div class="readout-item">
-      <div class="readout-label" data-i18n="stat.events">Event log</div>
-      <div class="readout-value">
-        <span class="stat-value" id="statEvents">0</span>
-        <span class="readout-unit" data-i18n="stat.eventsUnit">entries</span>
-      </div>
-    </div>
-    <div class="readout-live">
-      <span class="live-dot"></span>
-      <span data-i18n="stat.watching">Drive watch active</span>
-    </div>
-  </div>
-
-  <main class="layout">
-    <section class="panel">
-      <div class="panel-head">
-        <h2 data-i18n="panel.drives">Drives</h2>
-        <span class="hint" data-i18n="panel.drivesHint">Toggle to decide whether programs are closed when this drive is removed</span>
-      </div>
-      <div id="driveList" class="drive-list"></div>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2 data-i18n="panel.events">Event Log</h2>
-        <span class="hint" id="eventCount">0</span>
-      </div>
-      <div class="scroll-track"><div class="scroll-progress" id="scrollProgress"></div></div>
-      <div id="eventList" class="event-list"></div>
-    </section>
-  </main>
-
-  <!-- 关于弹窗 -->
-  <div id="aboutBackdrop" class="drawer-backdrop hidden"></div>
-  <div id="aboutDialog" class="dialog about hidden" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
-    <div class="dialog-head">
-      <h3 id="aboutTitle" data-i18n="about.title">About USB Guard</h3>
-      <button id="aboutClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
-    </div>
-    <div class="dialog-body about-body">
-      <img class="about-logo" src="../../assets/icons/app-256.png" alt="" />
-      <div class="about-name">USB Guard</div>
-      <div class="about-version" id="aboutVersion">v1.1.0</div>
-      <p class="about-desc" data-i18n="about.detail">Auto-close programs launched from a USB drive once it is unplugged</p>
-      <div class="about-repo">
-        <span class="about-repo-label" data-i18n="about.repo">Repository</span>
-        <a class="about-link" id="aboutRepoLink" href="#" title="https://github.com/FlyingTigerReally/usb-guard">github.com/FlyingTigerReally/usb-guard</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- 设置弹窗 -->
-  <div id="settingsBackdrop" class="drawer-backdrop hidden"></div>
-  <div id="settingsDialog" class="dialog hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-    <div class="dialog-head">
-      <h3 id="settingsTitle" data-i18n="panel.settings">Settings</h3>
-      <button id="settingsClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
-    </div>
-    <div class="dialog-body">
-      <div class="settings">
-        <label class="setting-row">
-          <input type="checkbox" id="setKillChildren" />
-          <span data-i18n="settings.killChildren">Also force-close child processes (recommended)</span>
-        </label>
-        <label class="setting-row">
-          <input type="checkbox" id="setAutoGuard" />
-          <span data-i18n="settings.autoGuard">Auto-guard removable disks (USB drives) when detected</span>
-        </label>
-        <label class="setting-row">
-          <input type="checkbox" id="setMinimizeToTray" />
-          <span data-i18n="settings.minimizeToTray">Minimize to tray when the window is closed (stay resident)</span>
-        </label>
-        <label class="setting-row">
-          <input type="checkbox" id="setAutoLaunch" />
-          <span data-i18n="settings.autoLaunch">Launch this guard automatically at login</span>
-        </label>
-        <div class="setting-row">
-          <span data-i18n="settings.scene3d">3D background</span>
-          <select id="sceneSelect" class="lang-select"></select>
+      <nav class="app-menus" aria-label="Application">
+        <div class="menu-wrap">
+          <button
+            class="menu-trigger"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-i18n="menu.file"
+          >
+            File
+          </button>
+          <div class="menu-popup hidden" role="menu">
+            <button role="menuitem" data-action="export" data-i18n="btn.export">
+              Export log
+            </button>
+            <button
+              role="menuitem"
+              data-action="hide"
+              data-i18n="menu.hideToTray"
+            >
+              Hide to tray
+            </button>
+            <hr />
+            <button role="menuitem" data-action="quit" data-i18n="menu.quit">
+              Quit
+            </button>
+          </div>
         </div>
-        <label class="setting-row">
-          <input type="checkbox" id="setLockAlert" />
-          <span data-i18n="settings.lockAlert">Flash red corners on unlock if a USB drive was left plugged in while locked</span>
-        </label>
-        <div class="setting-row">
-          <span data-i18n="settings.lockInterval">Notify interval (seconds)</span>
-          <input type="number" id="setLockInterval" class="lang-select num-input" min="5" max="600" step="5" />
+        <div class="menu-wrap">
+          <button
+            class="menu-trigger"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-i18n="menu.view"
+          >
+            View
+          </button>
+          <div class="menu-popup hidden" role="menu">
+            <button
+              role="menuitem"
+              data-action="refresh"
+              data-i18n="menu.refreshSnapshot"
+            >
+              Refresh
+            </button>
+            <button
+              role="menuitem"
+              data-action="settings"
+              data-i18n="btn.settings"
+            >
+              Settings
+            </button>
+            <hr />
+            <button
+              role="menuitem"
+              data-action="zoomIn"
+              data-i18n="menu.zoomIn"
+            >
+              Zoom in
+            </button>
+            <button
+              role="menuitem"
+              data-action="zoomOut"
+              data-i18n="menu.zoomOut"
+            >
+              Zoom out
+            </button>
+            <button
+              role="menuitem"
+              data-action="zoomReset"
+              data-i18n="menu.zoomReset"
+            >
+              Reset zoom
+            </button>
+            <hr />
+            <button
+              role="menuitem"
+              data-action="devtools"
+              data-i18n="menu.devTools"
+            >
+              Developer tools
+            </button>
+          </div>
+        </div>
+        <div class="menu-wrap">
+          <button
+            class="menu-trigger"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            data-i18n="menu.help"
+          >
+            Help
+          </button>
+          <div class="menu-popup hidden" role="menu">
+            <button role="menuitem" data-action="about" data-i18n="menu.about">
+              About USB Guard
+            </button>
+          </div>
+        </div>
+      </nav>
+      <span class="titlebar-caption">LOCAL PROTECTION / DESKTOP</span>
+      <div class="window-controls">
+        <button id="winMinimize" data-i18n-title="menu.minimize">
+          <svg viewBox="0 0 16 16"><path d="M3 8h10" /></svg>
+        </button>
+        <button id="winMaximize" data-i18n-title="window.maximize">
+          <svg viewBox="0 0 16 16">
+            <path id="maximizeIcon" d="M3.5 3.5h9v9h-9z" />
+          </svg>
+        </button>
+        <button id="winClose" data-i18n-title="btn.close">
+          <svg viewBox="0 0 16 16"><path d="m4 4 8 8m0-8-8 8" /></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="brand">
+          <h1>USB Guard<span>®</span></h1>
+          <p data-i18n="workspace.label">Your devices. In safe hands.</p>
+        </div>
+        <nav class="view-switch" aria-label="Workspace">
+          <button class="active" data-view="devices" aria-pressed="true">
+            <span class="nav-dot"></span
+            ><span data-i18n="nav.devices">Devices</span></button
+          ><button data-view="experience" aria-pressed="false">
+            <span class="nav-orbit">◎</span
+            ><span data-i18n="nav.experience">Guard universe</span>
+          </button>
+        </nav>
+        <div class="top-actions">
+          <button id="btnLogs" class="btn btn-log">
+            <span class="button-icon">≋</span
+            ><span data-i18n="panel.events">Event log</span
+            ><span id="logBadge">0</span></button
+          ><button id="btnSettings" class="btn" data-i18n="btn.settings">
+            Settings
+          </button>
+        </div>
+      </header>
+      <div class="readout">
+        <div class="readout-intro">
+          <span class="live-dot"></span
+          ><span id="watchStatus" data-i18n="stat.watching"
+            >Drive watch active</span
+          ><small>LOCAL FIRST. ALWAYS.</small>
+        </div>
+        <div class="readout-item">
+          <span class="readout-index">01</span
+          ><span data-i18n="stat.guarded">Guarded</span
+          ><strong id="statGuarded">0</strong>
+        </div>
+        <div class="readout-item">
+          <span class="readout-index">02</span
+          ><span data-i18n="stat.processes">Tracked processes</span
+          ><strong id="statProcesses">0</strong>
+        </div>
+        <button class="readout-item readout-log" id="statLogButton">
+          <span class="readout-index">03</span
+          ><span data-i18n="stat.events">Events</span
+          ><strong id="statEvents">0</strong><span>↗</span>
+        </button>
+      </div>
+      <div class="dashboard" id="devicesView">
+        <section class="panel drives-panel">
+          <div class="panel-head">
+            <div>
+              <div class="section-kicker">YOUR CONNECTED WORLD</div>
+              <h2>
+                <span data-i18n="panel.drives">Connected drives</span
+                ><span id="driveCount" class="count-pill">0</span>
+              </h2>
+            </div>
+            <button
+              id="btnRefresh"
+              class="btn btn-primary"
+              data-i18n="btn.refresh"
+            >
+              Refresh snapshot
+            </button>
+          </div>
+          <div class="panel-toolbar">
+            <div class="filter-group" role="group" aria-label="Drive filter">
+              <button
+                class="filter active"
+                data-drive-filter="all"
+                aria-pressed="true"
+                data-i18n="filter.all"
+              >
+                All</button
+              ><button
+                class="filter"
+                data-drive-filter="guarded"
+                aria-pressed="false"
+                data-i18n="filter.guarded"
+              >
+                Guarded</button
+              ><button
+                class="filter"
+                data-drive-filter="removable"
+                aria-pressed="false"
+                data-i18n="filter.usb"
+              >
+                USB
+              </button>
+            </div>
+            <span class="list-hint" data-i18n="panel.cardView">Card view</span>
+          </div>
+          <div id="driveList" class="drive-list"></div>
+          <div class="panel-foot">
+            <span class="small-dot"></span
+            ><span data-i18n="panel.drivesHint"
+              >Programs close automatically when a protected drive is
+              removed</span
+            >
+          </div>
+        </section>
+        <aside class="stage-shell" id="dashboardStage">
+          <section
+            class="hero"
+            id="visualStage"
+            aria-label="Interactive guard universe"
+          >
+            <canvas id="hero3d" aria-hidden="true"></canvas>
+            <div class="stage-grain"></div>
+            <div class="stage-top">
+              <span
+                ><span class="live-dot"></span
+                ><span id="heroStatus" data-i18n="hero.ready"
+                  >ALWAYS READY</span
+                ></span
+              ><button
+                id="btnMotion"
+                class="motion-control"
+                aria-pressed="false"
+                data-i18n="scene.pause"
+              >
+                Pause animation
+              </button>
+            </div>
+            <div class="hero-copy">
+              <div class="section-kicker">THE GUARD UNIVERSE / 01</div>
+              <h2 id="heroTitle">
+                <span data-i18n="hero.line1">Unplug.</span><br /><span
+                  class="hero-accent"
+                  data-i18n="hero.line2"
+                  >Leave no trace.</span
+                >
+              </h2>
+              <p data-i18n="app.subtitle">
+                Programs close when your drive leaves.
+              </p>
+              <button id="btnExplore" class="btn btn-light">
+                <span data-i18n="btn.explore">Explore the universe</span
+                ><span>↗</span>
+              </button>
+            </div>
+            <div class="stage-picker" role="group" aria-label="Scene preview">
+              <button
+                class="active"
+                data-preview="0"
+                data-i18n="chapter.valley"
+              >
+                Valley</button
+              ><button data-preview="1" data-i18n="chapter.team">Team</button
+              ><button data-preview="2" data-i18n="chapter.tunnel">
+                Tunnel</button
+              ><button data-preview="4" data-i18n="chapter.glass">Glass</button>
+            </div>
+            <div class="scene-label">
+              <span class="scene-cross">+</span
+              ><span data-i18n="hero.interact"
+                >Move to explore · scroll to travel</span
+              >
+            </div>
+            <div class="brand-loop" aria-hidden="true">
+              <div>
+                USB GUARD ✳ ALWAYS WITH YOU ✳ LOCAL FIRST ✳ USB GUARD ✳ ALWAYS
+                WITH YOU ✳ LOCAL FIRST ✳
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+      <section
+        class="experience hidden"
+        id="experienceView"
+        aria-label="Guard universe"
+      >
+        <div id="experienceStage"></div>
+        <div class="experience-scroll" id="experienceScroll" tabindex="0">
+          <section class="chapter" data-chapter="0">
+            <div class="chapter-copy">
+              <div class="chapter-number">01 / THE SIGNAL</div>
+              <h2 data-i18n="exp.valley.title">
+                Every signal.<br />A world to protect.
+              </h2>
+              <p data-i18n="exp.valley.desc">
+                A field of connections. One guardian watching over them.
+              </p>
+              <div class="scroll-cue">
+                <span>↓</span
+                ><span data-i18n="exp.scroll">Scroll to travel</span>
+              </div>
+            </div>
+          </section>
+          <section class="chapter" data-chapter="1">
+            <div class="chapter-copy">
+              <div class="chapter-number">02 / THE COLLECTIVE</div>
+              <h2 data-i18n="exp.team.title">Three roles.<br />One promise.</h2>
+              <p data-i18n="exp.team.desc">
+                Detect. Track. Close. Meet the three parts of your local
+                protection.
+              </p>
+              <div class="team-selector" role="group" aria-label="Guard team">
+                <button class="active" data-team="0" aria-pressed="true">
+                  <span>01</span><strong data-i18n="team.scout">Scout</strong
+                  ><small data-i18n="team.scout.desc"
+                    >Drive detection</small
+                  ></button
+                ><button data-team="1" aria-pressed="false">
+                  <span>02</span
+                  ><strong data-i18n="team.tracker">Tracker</strong
+                  ><small data-i18n="team.tracker.desc"
+                    >Process snapshots</small
+                  ></button
+                ><button data-team="2" aria-pressed="false">
+                  <span>03</span><strong data-i18n="team.cleaner">Closer</strong
+                  ><small data-i18n="team.cleaner.desc">Process cleanup</small>
+                </button>
+              </div>
+            </div>
+          </section>
+          <section class="chapter chapter-center" data-chapter="2">
+            <div class="chapter-copy">
+              <div class="chapter-number">03 / THROUGH THE FLOW</div>
+              <h2 data-i18n="exp.tunnel.title">Follow the signal.</h2>
+              <p data-i18n="exp.tunnel.desc">
+                Scroll through the data tunnel. Protection follows your drive.
+              </p>
+            </div>
+          </section>
+          <section class="chapter" data-chapter="3">
+            <div class="chapter-copy">
+              <div class="chapter-number">04 / THE EXPLORER</div>
+              <h2 data-i18n="exp.astronaut.title">
+                Go anywhere.<br />Stay connected.
+              </h2>
+              <p data-i18n="exp.astronaut.desc">
+                A little explorer for your portable world. Move your pointer to
+                change perspective.
+              </p>
+            </div>
+          </section>
+          <section class="chapter" data-chapter="4">
+            <div class="chapter-copy">
+              <div class="chapter-number">05 / A CLEAR BOUNDARY</div>
+              <h2 data-i18n="exp.glass.title">
+                A transparent<br />line of defense.
+              </h2>
+              <p data-i18n="exp.glass.desc">
+                Scroll to open the glass shield. Your settings stay visible.
+                Your data stays local.
+              </p>
+            </div>
+          </section>
+          <section class="chapter chapter-cards" data-chapter="5">
+            <div class="chapter-copy">
+              <div class="chapter-number">06 / BUILT TO PROTECT</div>
+              <h2 data-i18n="exp.cap.title">
+                Small tool.<br />Full attention.
+              </h2>
+            </div>
+            <div class="capability-grid">
+              <button class="capability-card" data-settings-target="protection">
+                <span class="cap-icon">⌁</span
+                ><span class="cap-index">01 / DETECT</span>
+                <h3 data-i18n="cap.detect">Listen to every connection</h3>
+                <p data-i18n="cap.detect.desc">
+                  Automatically guard removable drives as soon as they appear.
+                </p>
+                <span class="cap-link" data-i18n="cap.configure"
+                  >Configure ↗</span
+                >
+              </button>
+              <button class="capability-card" data-settings-target="protection">
+                <span class="cap-icon">⌘</span
+                ><span class="cap-index">02 / TRACE</span>
+                <h3 data-i18n="cap.track">Know the whole process tree</h3>
+                <p data-i18n="cap.track.desc">
+                  Track executable paths and include child processes in cleanup.
+                </p>
+                <span class="cap-link" data-i18n="cap.configure"
+                  >Configure ↗</span
+                >
+              </button>
+              <button class="capability-card" data-settings-target="system">
+                <span class="cap-icon">◎</span
+                ><span class="cap-index">03 / STAY</span>
+                <h3 data-i18n="cap.stay">Quietly keep watch</h3>
+                <p data-i18n="cap.stay.desc">
+                  Stay in the tray, start with Windows and remind you while
+                  locked.
+                </p>
+                <span class="cap-link" data-i18n="cap.configure"
+                  >Configure ↗</span
+                >
+              </button>
+            </div>
+          </section>
+          <section class="chapter chapter-awards" data-chapter="6">
+            <div class="chapter-copy">
+              <div class="chapter-number">07 / YOUR GUARD MARKS</div>
+              <h2 data-i18n="exp.awards.title">
+                Protection,<br />worth a badge.
+              </h2>
+              <p data-i18n="exp.awards.desc">
+                Your current protection, celebrated. These badges reflect this
+                device and this session.
+              </p>
+            </div>
+            <div class="award-list">
+              <div class="award-row">
+                <span class="award-star">✳</span>
+                <div>
+                  <h3 data-i18n="award.local">Local by design</h3>
+                  <p data-i18n="award.local.desc">
+                    No account. No cloud service.
+                  </p>
+                </div>
+                <strong>100%<small>LOCAL</small></strong>
+              </div>
+              <div class="award-row">
+                <span class="award-star">✺</span>
+                <div>
+                  <h3 data-i18n="award.guard">Under your protection</h3>
+                  <p data-i18n="award.guard.desc">Drives guarded right now</p>
+                </div>
+                <strong id="awardGuarded">0<small>DRIVES</small></strong>
+              </div>
+              <div class="award-row">
+                <span class="award-star">✧</span>
+                <div>
+                  <h3 data-i18n="award.closed">Clean exits</h3>
+                  <p data-i18n="award.closed.desc">
+                    Processes closed in the current event history
+                  </p>
+                </div>
+                <strong id="awardClosed">0<small>PROCESSES</small></strong>
+              </div>
+              <button id="btnReturn" class="btn btn-light">
+                <span data-i18n="btn.return">Back to devices</span
+                ><span>↗</span>
+              </button>
+            </div>
+            <div class="end-wordmark" aria-hidden="true">USB GUARD®</div>
+          </section>
+        </div>
+        <nav class="chapter-nav" aria-label="Scene chapters">
+          <button class="active" data-jump="0" aria-label="Particle valley">
+            01</button
+          ><button data-jump="1" aria-label="Guard team">02</button
+          ><button data-jump="2" aria-label="Data tunnel">03</button
+          ><button data-jump="3" aria-label="Astronaut">04</button
+          ><button data-jump="4" aria-label="Glass shield">05</button
+          ><button data-jump="5" aria-label="Capabilities">06</button
+          ><button data-jump="6" aria-label="Guard badges">07</button>
+        </nav>
+        <div class="journey-progress"><span id="journeyProgress"></span></div>
+      </section>
+      <footer class="workspace-footer">
+        <span data-i18n="footer.local">On your device. Under your control.</span
+        ><span class="footer-hint" data-i18n="footer.hint"
+          >PROTECT WHAT MOVES WITH YOU</span
+        ><span id="appVersion">v1.2.0</span>
+      </footer>
+    </main>
+    <div id="toast" role="status" class="toast hidden"></div>
+    <!-- 关于弹窗 -->
+    <div id="aboutBackdrop" class="drawer-backdrop hidden"></div>
+    <div
+      id="aboutDialog"
+      class="dialog about hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="aboutTitle"
+    >
+      <div class="dialog-head">
+        <h3 id="aboutTitle" data-i18n="about.title">About USB Guard</h3>
+        <button id="aboutClose" class="btn btn-ghost" data-i18n="btn.close">
+          Close
+        </button>
+      </div>
+      <div class="dialog-body about-body">
+        <img class="about-logo" src="../../assets/icons/app-256.png" alt="" />
+        <div class="about-name">USB Guard</div>
+        <div class="about-version" id="aboutVersion">v1.1.0</div>
+        <p class="about-desc" data-i18n="about.detail">
+          Auto-close programs launched from a USB drive once it is unplugged
+        </p>
+        <div class="about-repo">
+          <span class="about-repo-label" data-i18n="about.repo"
+            >Repository</span
+          >
+          <a
+            class="about-link"
+            id="aboutRepoLink"
+            href="#"
+            title="https://github.com/FlyingTigerReally/usb-guard"
+            >github.com/FlyingTigerReally/usb-guard</a
+          >
         </div>
       </div>
     </div>
-  </div>
 
-  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
-  <aside id="detailDrawer" class="drawer hidden">
-    <div class="drawer-head">
-      <h3 id="drawerTitle" data-i18n="panel.processDetail">Process Detail</h3>
-      <button id="drawerClose" class="btn btn-ghost" data-i18n="btn.close">Close</button>
-    </div>
-    <div id="drawerBody" class="drawer-body"></div>
-    <div class="drawer-foot">
-      <button id="btnKillAll" class="btn btn-danger" data-i18n="btn.killAll">Force-close all programs on this drive</button>
-    </div>
-  </aside>
+    <div id="logBackdrop" class="drawer-backdrop hidden"></div>
+    <section
+      id="logDialog"
+      class="dialog log-dialog hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="logTitle"
+    >
+      <div class="dialog-head">
+        <div>
+          <div class="section-kicker">A RECORD OF EVERY ACTION</div>
+          <h3 id="logTitle" data-i18n="panel.events">Event log</h3>
+        </div>
+        <div class="dialog-actions">
+          <button id="btnExport" class="btn" data-i18n="btn.export">
+            Export log ↗</button
+          ><button id="logClose" class="icon-btn" data-i18n-title="btn.close">
+            ✕
+          </button>
+        </div>
+      </div>
+      <div class="log-toolbar">
+        <input
+          id="logSearch"
+          class="search-input"
+          type="search"
+          data-i18n-placeholder="log.search"
+          placeholder="Search events"
+        /><span id="eventCount" class="hint">0</span
+        ><label class="error-filter"
+          ><input id="errorsOnly" type="checkbox" /><span
+            data-i18n="filter.errors"
+            >Errors only</span
+          ></label
+        >
+      </div>
+      <div class="scroll-track">
+        <div class="scroll-progress" id="scrollProgress"></div>
+      </div>
+      <div id="eventList" class="event-list" role="log" aria-live="off"></div>
+      <div class="log-foot">
+        <span class="live-dot"></span
+        ><span data-i18n="log.live"
+          >Live · up to 500 recent events, 100 shown</span
+        >
+      </div>
+    </section>
+    <div id="settingsBackdrop" class="drawer-backdrop hidden"></div>
+    <section
+      id="settingsDialog"
+      class="dialog settings-dialog hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settingsTitle"
+    >
+      <aside class="settings-sidebar">
+        <div class="settings-emblem">G<span>✳</span></div>
+        <div class="section-kicker">MAKE IT YOURS</div>
+        <h3 id="settingsTitle" data-i18n="panel.settings">Settings</h3>
+        <nav
+          class="settings-tabs"
+          role="tablist"
+          aria-label="Settings categories"
+        >
+          <button
+            class="active"
+            role="tab"
+            id="tab-protection"
+            aria-controls="settings-protection"
+            aria-selected="true"
+            data-settings-tab="protection"
+          >
+            <span>01</span
+            ><span data-i18n="settings.tab.protection">Protection</span
+            ><span>↗</span></button
+          ><button
+            role="tab"
+            id="tab-appearance"
+            aria-controls="settings-appearance"
+            aria-selected="false"
+            data-settings-tab="appearance"
+            tabindex="-1"
+          >
+            <span>02</span
+            ><span data-i18n="settings.tab.appearance">Appearance</span
+            ><span>↗</span></button
+          ><button
+            role="tab"
+            id="tab-system"
+            aria-controls="settings-system"
+            aria-selected="false"
+            data-settings-tab="system"
+            tabindex="-1"
+          >
+            <span>03</span><span data-i18n="settings.tab.system">System</span
+            ><span>↗</span>
+          </button>
+        </nav>
+        <p data-i18n="settings.local">
+          Your preferences stay on this computer.
+        </p>
+        <span class="settings-watermark">USB<br />GUARD.</span>
+      </aside>
+      <div class="settings-main">
+        <div class="settings-top">
+          <span class="section-kicker">PREFERENCES / USB GUARD</span
+          ><button
+            id="settingsClose"
+            class="icon-btn"
+            data-i18n-title="btn.close"
+          >
+            ✕
+          </button>
+        </div>
+        <div class="settings-content">
+          <section
+            id="settings-protection"
+            class="settings-pane"
+            role="tabpanel"
+            aria-labelledby="tab-protection"
+          >
+            <h2 data-i18n="settings.protection.title">
+              Your rules.<br />Our watch.
+            </h2>
+            <p class="settings-lead" data-i18n="settings.protection.desc">
+              Choose how your drives and their programs are protected.
+            </p>
+            <label class="setting-row"
+              ><span
+                ><strong data-i18n="settings.autoGuard.title"
+                  >Automatic protection</strong
+                ><small data-i18n="settings.autoGuard"
+                  >Auto-guard removable drives when detected</small
+                ></span
+              ><span class="switch"
+                ><input id="setAutoGuard" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
+            <label class="setting-row"
+              ><span
+                ><strong data-i18n="settings.killChildren.title"
+                  >Close the whole tree</strong
+                ><small data-i18n="settings.killChildren"
+                  >Also close child processes</small
+                ></span
+              ><span class="switch"
+                ><input id="setKillChildren" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
+            <div class="settings-note">
+              <span>↳</span>
+              <p data-i18n="settings.protection.note">
+                Removal protection force-closes registered programs. Save your
+                work before unplugging.
+              </p>
+            </div>
+          </section>
+          <section
+            id="settings-appearance"
+            class="settings-pane hidden"
+            role="tabpanel"
+            aria-labelledby="tab-appearance"
+          >
+            <h2 data-i18n="settings.appearance.title">A little more you.</h2>
+            <p class="settings-lead" data-i18n="settings.appearance.desc">
+              Tune the atmosphere, motion and visual detail.
+            </p>
+            <div class="appearance-pair">
+              <label
+                ><span data-i18n="theme.label">Theme</span
+                ><select id="themeSelect" class="lang-select"></select></label
+              ><label
+                ><span data-i18n="language.label">Language</span
+                ><select id="langSelect" class="lang-select"></select
+              ></label>
+            </div>
+            <div class="setting-section-label" data-i18n="settings.scene3d">
+              Scene
+            </div>
+            <div class="scene-options" role="group" aria-label="Scene preset">
+              <button data-scene-choice="core" class="scene-option">
+                <i class="scene-swatch valley-swatch"></i
+                ><span data-i18n="chapter.valley">Valley</span></button
+              ><button data-scene-choice="nebula" class="scene-option">
+                <i class="scene-swatch team-swatch"></i
+                ><span data-i18n="chapter.team">Team</span></button
+              ><button data-scene-choice="tunnel" class="scene-option">
+                <i class="scene-swatch tunnel-swatch"></i
+                ><span data-i18n="chapter.tunnel">Tunnel</span></button
+              ><button data-scene-choice="glass" class="scene-option">
+                <i class="scene-swatch glass-swatch"></i
+                ><span data-i18n="chapter.glass">Glass</span></button
+              ><button data-scene-choice="off" class="scene-option">
+                <i class="scene-swatch off-swatch"></i
+                ><span data-i18n="scene.off">Off</span>
+              </button>
+            </div>
+            <select
+              id="sceneSelect"
+              class="hidden"
+              aria-label="Scene preset"
+            ></select>
+            <label class="setting-row compact"
+              ><span
+                ><strong data-i18n="settings.motion.title"
+                  >Continuous animation</strong
+                ><small data-i18n="settings.motion.desc"
+                  >Pointer and scroll still respond when animation is
+                  paused.</small
+                ></span
+              ><span class="switch"
+                ><input id="setMotion" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
+            <label class="setting-row compact"
+              ><span
+                ><strong data-i18n="settings.pointer.title"
+                  >Liquid pointer trail</strong
+                ><small data-i18n="settings.pointer.desc"
+                  >Transparent fluid and rainbow edges across the
+                  workspace.</small
+                ></span
+              ><span class="switch"
+                ><input id="setPointerEffect" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
 
-  <script src="./vendor/gsap.min.js"></script>
-  <script src="./vendor/ScrollTrigger.min.js"></script>
-  <script src="renderer.js"></script>
-  <script type="module" src="scene3d.js"></script>
-</body>
+            <label class="setting-row compact"
+              ><span
+                ><strong data-i18n="settings.quality"
+                  >Visual quality</strong
+                ></span
+              ><select id="qualitySelect" class="lang-select">
+                <option value="low" data-i18n="quality.low">Low</option>
+                <option value="balanced" data-i18n="quality.balanced">
+                  Balanced
+                </option>
+                <option value="high" data-i18n="quality.high">High</option>
+              </select></label
+            >
+          </section>
+          <section
+            id="settings-system"
+            class="settings-pane hidden"
+            role="tabpanel"
+            aria-labelledby="tab-system"
+          >
+            <h2 data-i18n="settings.system.title">
+              Quietly.<br />Always there.
+            </h2>
+            <p class="settings-lead" data-i18n="settings.system.desc">
+              Decide how USB Guard fits into your day.
+            </p>
+            <label class="setting-row"
+              ><span
+                ><strong data-i18n="settings.tray.title"
+                  >Keep watch in the tray</strong
+                ><small data-i18n="settings.minimizeToTray"
+                  >Close the window and keep protection active</small
+                ></span
+              ><span class="switch"
+                ><input id="setMinimizeToTray" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
+            <label class="setting-row"
+              ><span
+                ><strong data-i18n="settings.start.title"
+                  >Start with Windows</strong
+                ><small data-i18n="settings.autoLaunch"
+                  >Launch at login</small
+                ></span
+              ><span class="switch"
+                ><input id="setAutoLaunch" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
+            <label class="setting-row"
+              ><span
+                ><strong data-i18n="settings.lock.title"
+                  >A reminder before you leave</strong
+                ><small data-i18n="settings.lockAlert"
+                  >Notify while locked if a drive is still connected</small
+                ></span
+              ><span class="switch"
+                ><input id="setLockAlert" type="checkbox" /><span
+                  class="slider"
+                ></span></span
+            ></label>
+            <label class="setting-row compact"
+              ><span
+                ><strong data-i18n="settings.lockInterval"
+                  >Reminder interval (seconds)</strong
+                ></span
+              ><input
+                type="number"
+                id="setLockInterval"
+                class="lang-select num-input"
+                min="5"
+                max="600"
+                step="5"
+            /></label>
+          </section>
+        </div>
+        <footer class="settings-footer">
+          <span class="small-dot"></span
+          ><span id="settingsSaved" data-i18n="settings.saved"
+            >Changes are saved automatically</span
+          ><span>↲</span>
+        </footer>
+      </div>
+    </section>
+    <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+    <aside
+      id="detailDrawer"
+      class="drawer hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawerTitle"
+    >
+      <div class="drawer-head">
+        <h3 id="drawerTitle" data-i18n="panel.processDetail">Process Detail</h3>
+        <button id="drawerClose" class="btn btn-ghost" data-i18n="btn.close">
+          Close
+        </button>
+      </div>
+      <div id="drawerBody" class="drawer-body"></div>
+      <div class="drawer-foot">
+        <button id="btnKillAll" class="btn btn-danger" data-i18n="btn.killAll">
+          Force-close all programs on this drive
+        </button>
+      </div>
+    </aside>
+
+    <canvas id="pointerPaint" aria-hidden="true"></canvas>
+    <script type="module" src="pointer-overlay.js"></script>
+    <script src="./vendor/gsap.min.js"></script>
+    <script src="renderer.js"></script>
+    <script type="module" src="scene3d.js"></script>
+  </body>
 </html>

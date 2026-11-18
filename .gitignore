@@ -32,3 +32,6 @@ desktop.ini
 
 # Local settings / runtime data
 settings.json
+
+# Generated Electron UI verification artifacts
+/verification/

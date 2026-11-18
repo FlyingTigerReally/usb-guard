@@ -1,8 +1,8 @@
 /**
  * 设置持久化：读写 userData/settings.json
  */
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // ============ 配置项默认值（详细说明见注释） ============
 const DEFAULTS = {
@@ -37,13 +37,16 @@ const DEFAULTS = {
 
   // 界面语言：'en' = English，'zh-CN' = 简体中文
   // 说明：取值为英文语言码，不做中文判断
-  language: 'en',
+  language: "en",
 
   // 界面主题：'system' = 跟随操作系统，'light' = 浅色，'dark' = 深色
-  theme: 'system',
+  theme: "system",
 
-  // 3D 背景样式：'core' = 守护核心，'nebula' = 粒子星云，'off' = 关闭
-  scene3d: 'core',
+  // 场景预设：core = 粒子山谷，nebula = 团队点云（兼容旧键），另有 tunnel / glass / off
+  scene3d: "core",
+  visualQuality: "balanced",
+  motionPaused: 0,
+  pointerEffect: 1,
 
   // 1 = 锁屏离开时U盘未拔，解锁后四角红光警示；0 = 关闭
   // 说明：Windows 锁屏画面为系统安全桌面，无法在其上覆盖显示，
@@ -58,10 +61,10 @@ let data = { ...DEFAULTS };
 let filePath = null;
 
 function init(userDataDir) {
-  filePath = path.join(userDataDir, 'settings.json');
+  filePath = path.join(userDataDir, "settings.json");
   try {
     if (fs.existsSync(filePath)) {
-      const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const raw = JSON.parse(fs.readFileSync(filePath, "utf8"));
       // 仅接受已知配置项，防止脏数据污染
       for (const key of Object.keys(DEFAULTS)) {
         if (raw[key] !== undefined) data[key] = raw[key];
@@ -77,7 +80,7 @@ function init(userDataDir) {
 function save() {
   if (!filePath) return;
   try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
   } catch (err) {
     // 写入失败不阻断主流程
   }
@@ -91,4 +94,12 @@ function update(patch) {
   return data;
 }
 
-module.exports = { DEFAULTS, init, update, save, get data() { return data; } };
+module.exports = {
+  DEFAULTS,
+  init,
+  update,
+  save,
+  get data() {
+    return data;
+  },
+};

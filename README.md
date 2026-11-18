@@ -28,7 +28,7 @@ Portable apps launched from a USB drive keep running silently after the drive is
 - **Auto-launch at login** — optional startup with Windows
 - **System tray** — stays resident, close-to-tray supported
 - **Light / dark theme** — follow the system, or pick light/dark manually
-- **3D ambient backgrounds** — Guard Core / Nebula scenes, switchable in Settings (or off)
+- **Guard universe** — GLSL particle valley and guardian, morphing team portraits, data tunnel, astronaut, refractive glass shield and seven scroll chapters
 - **Bilingual UI** — English / 简体中文, switchable at runtime
 - **No backend, no telemetry** — all data comes from local Windows system APIs, works fully offline
 
@@ -52,21 +52,34 @@ npm start
 2. Toggle the switch on a drive to enable unplug guarding (removable disks are auto-guarded by default).
 3. While guarded, the app keeps a periodic snapshot of processes running from that drive.
 4. **Unplug the drive** — every tracked process is force-closed immediately.
-5. Check the **Event Log** panel for what happened (drive removed, processes closed, failures).
+5. Check the **Event Log** dialog for what happened (drive removed, processes closed, failures).
 
 The tray icon keeps the guard running in the background. Right-click it for **Show main window** / **Exit**.
 
 ## Settings
 
-| Setting                                | Default       | Description                                                  |
-| -------------------------------------- | ------------- | ------------------------------------------------------------ |
-| Also force-close child processes       | On            | Close the whole process tree (`taskkill /T`)                 |
-| Auto-guard removable disks             | On            | Enable guarding automatically for USB drives (driveType = 2) |
-| Minimize to tray when window is closed | On            | Keep guarding in the background                              |
-| Launch at login                        | On            | Register/unregister Windows auto-start                       |
-| Theme                                  | Follow system | Follow system / Light / Dark                                 |
-| 3D background                          | Guard Core    | Ambient scene: Guard Core / Nebula / Off                     |
-| Language                               | English       | UI language: English / 简体中文                              |
+| Setting                                | Default         | Description                                                  |
+| -------------------------------------- | --------------- | ------------------------------------------------------------ |
+| Also force-close child processes       | On              | Close the whole process tree (`taskkill /T`)                 |
+| Auto-guard removable disks             | On              | Enable guarding automatically for USB drives (driveType = 2) |
+| Minimize to tray when window is closed | On              | Keep guarding in the background                              |
+| Launch at login                        | On              | Register/unregister Windows auto-start                       |
+| Theme                                  | Follow system   | Follow system / Light / Dark                                 |
+| Scene preset                           | Particle valley | Valley / Team / Tunnel / Glass / Off                         |
+| Continuous animation                   | On              | Pausable; pointer and scroll remain interactive              |
+| Liquid pointer trail                   | On              | Transparent mint/blue fluid across the workspace             |
+| Visual quality                         | Balanced        | Low / Balanced / High render resolution and frame budget     |
+| Language                               | English         | UI language: English / 简体中文                              |
+
+## Workspace UI
+
+The device dashboard keeps the drive grid in the main area with independent scrolling (six full cards at the standard 1240 × 860 window). Logs open in a searchable dialog with an error filter and local JSON export. Settings have Protection, Appearance and System tabs; custom Electron menus and window controls replace the native menu.
+
+The separate Guard universe view contains seven scroll chapters: particle valley and humanoid guardian, three morphing point-cloud portraits, data tunnel, procedural astronaut, refractive glass shield, capability cards linked to settings, and badges calculated from current guard state and event history. A looping wordmark, magnetic buttons, hover lighting and card tilt complete the interaction.
+
+Original geometry is generated in `src/renderer/scene3d.js`; independent GLSL sources live in `src/renderer/shaders/` and load through a fixed-file IPC allowlist. The scene uses a renderer/RAF chain, a ping-pong pointer-flow texture, a scene render target and a final distortion pass. A separate transparent WebGL layer applies mint/blue liquid highlights over native controls without intercepting clicks; it only renders during pointer movement and the following 3.2-second decay. The 3D scene also samples the flow for refraction. The flow shaders are adapted from the supplied blog project; see THIRD_PARTY_NOTICES.md for attribution. Glass samples a separate background render target. Low/Balanced target 30 fps; High targets 60 fps. Pausing, hidden windows, reduced-motion preferences and WebGL fallback are supported. Scenes use local vendors and procedural assets; no reference-project models or textures are copied.
+
+Run `npm run verify:ui` for an Electron integration check using the real window, preload and IPC with isolated fixture drives. It uses a temporary settings directory and never scans or closes real processes or changes login items. Run `npm run verify:ui:fallback` to check the fallback. Screenshots and results are saved in `verification/`. Physical drive removal still requires a real USB device to verify.
 
 ## How It Works
 

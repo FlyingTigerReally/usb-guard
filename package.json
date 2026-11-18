@@ -6,7 +6,9 @@
   "scripts": {
     "start": "electron .",
     "icons": "electron scripts/generate-icons.js",
-    "build": "electron-builder --win"
+    "build": "electron-builder --win",
+    "verify:ui": "electron scripts/verify-ui.cjs",
+    "verify:ui:fallback": "electron scripts/verify-ui.cjs --verify-no-webgl"
   },
   "author": "FlyingTigerReally",
   "license": "MIT",
